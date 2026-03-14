@@ -1,6 +1,9 @@
+"use client"
 const login = () => {
   return (
-    <div>Login Page</div>
+    <div>
+      Login Page
+    </div>
   )
 }
 

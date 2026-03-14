@@ -1,6 +1,6 @@
 const HomePage = () => {
   return (
-    <div>DashBoard</div>
+    <div className="ml-100 fixed mt-10 z-0">DashBoard</div>
   )
 }
 
