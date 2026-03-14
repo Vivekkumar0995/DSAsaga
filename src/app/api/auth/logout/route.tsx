@@ -1,7 +1,5 @@
-const logout = () => {
-  return (
-    <div>route</div>
-  )
-}
+import { NextResponse } from "next/server";
 
-export default logout
+export async function POST() {
+  return NextResponse.json({ message: "Logout route is working" }, { status: 200 });
+}
