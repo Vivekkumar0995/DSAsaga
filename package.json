@@ -11,6 +11,8 @@
   "dependencies": {
     "@heroui/react": "^2.8.10",
     "framer-motion": "^12.36.0",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.0",
     "next": "16.1.6",
     "nodemon": "^3.1.14",
@@ -20,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
