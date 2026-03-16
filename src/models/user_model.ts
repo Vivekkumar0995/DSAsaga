@@ -34,7 +34,11 @@ resetOtp:{
 resetOtpExpireAt:{
   type:Number,
   default:0
-}
+},
+createdAt:{
+  type:Date,
+  default:Date.now
+},
 })
 
 const UserModel = mongoose.model("user" , userSchema)
