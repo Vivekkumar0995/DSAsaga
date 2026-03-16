@@ -18,6 +18,10 @@ if(!user){
   return NextResponse.json({message:"Invalid Credentials"},{status:400})
 }
 
+if(!user.isAccountVerified){
+  return NextResponse.json({message:"Please verify your email first"},{status:403})
+}
+
 const isPasswordMatch = await bcrypt.compare(password ,user.password);
 if(!isPasswordMatch){
   return NextResponse.json({message:"Wrong password"},{status:400})
