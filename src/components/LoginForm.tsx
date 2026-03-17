@@ -3,13 +3,34 @@ import Link from 'next/link'
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 import { FcGoogle } from "react-icons/fc";
 import React, { useState } from 'react'
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 const LoginForm = () => {
-  const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    const loadingToast = toast.loading("Logging in...");
+
+    try {
+      const response = await axios.post('/api/auth/login', {email, password});
+      toast.success(response.data.message || "Successfully logged in!", { id: loadingToast });
+      router.push('/');
+      router.refresh();
+    } catch(error: any){
+      const errorMessage = error.response?.data?.message || "Login failed";
+      toast.error(errorMessage, { id: loadingToast });
+    }
+  };
 
   return (
     <div className="w-full h-full flex justify-center items-center">
-        <form action="" className='bg-white h-3/5 flex flex-col justify-center gap-5 items-center p-5 rounded-2xl shadow-lg w-3/5 mt-25 hover:shadow-xl hover:scale-101 transition-transform duration-500 ease-in-out'>
+        <form onSubmit={handleSubmit} className='bg-white h-3/5 flex flex-col justify-center gap-5 items-center p-5 rounded-2xl shadow-lg w-3/5 mt-25 hover:shadow-xl hover:scale-101 transition-transform duration-500 ease-in-out'>
 
         <h1 className='text-2xl font-bold text-black'>Welcome Back</h1>
 
@@ -27,6 +48,8 @@ const LoginForm = () => {
             autoComplete="email"
             placeholder="Enter email"
             className='h-10 w-5/6 rounded-xl border border-gray-300 bg-white px-4 text-black focus:outline-none focus:ring-2 focus:ring-gray-400'
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
           
           <div className='relative w-5/6'>
@@ -37,6 +60,8 @@ const LoginForm = () => {
               autoComplete="current-password"
               placeholder="Enter password"
               className='h-10 w-full rounded-xl border border-gray-300 bg-white px-4 pr-12 text-black focus:outline-none focus:ring-2 focus:ring-gray-400'
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
             <button
               type="button"
