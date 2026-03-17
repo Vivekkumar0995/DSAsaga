@@ -73,7 +73,7 @@ const SignupForm = () => {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          
+
           <div className='relative w-5/6'>
             <input
               id="password"
@@ -94,7 +94,7 @@ const SignupForm = () => {
               {showPassword ? <FiEyeOff className='text-sm' /> : <FiEye className='text-sm' />}
             </button>
           </div>
-          
+
           <div className='relative w-5/6'>
             <input
               id="confirmPassword"
