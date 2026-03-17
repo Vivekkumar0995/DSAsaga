@@ -38,7 +38,7 @@ const SignupForm = () => {
             placeholder="Enter email"
             className='h-10 w-5/6 rounded-xl border border-gray-300 bg-white px-4 text-black focus:outline-none focus:ring-2 focus:ring-gray-400'
           />
-          
+
           <div className='relative w-5/6'>
             <input
               id="password"
@@ -57,7 +57,7 @@ const SignupForm = () => {
               {showPassword ? <FiEyeOff className='text-sm' /> : <FiEye className='text-sm' />}
             </button>
           </div>
-          
+
           <div className='relative w-5/6'>
             <input
               id="confirmPassword"

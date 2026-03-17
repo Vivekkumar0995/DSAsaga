@@ -39,6 +39,10 @@ createdAt:{
   type:Date,
   default:Date.now
 },
+profileImage:{
+type:String,
+default:""
+}
 })
 
 const UserModel = mongoose.model("user" , userSchema)
