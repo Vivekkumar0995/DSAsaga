@@ -3,14 +3,45 @@ import Link from 'next/link'
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 import { FcGoogle } from "react-icons/fc";
 import React, { useState } from 'react'
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 const SignupForm = () => {
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [cpassword, setcPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    if(password !== cpassword){
+      toast.error("Password and confirm password are different");
+      document.getElementById("confirmPassword")?.focus();
+      return;
+    }
+    const loadingToast = toast.loading("Creating your account...");
+
+    try {
+      const response = await axios.post('/api/auth/signup', {name, email, password});
+      toast.success(response.data.message || "Accound created successfully!!", { id: loadingToast });
+      const otp = await axios.post('/api/auth/send-otp', {email});
+      localStorage.setItem('email', email);
+      toast.success(otp.data.message || "Check your email for OTP");
+      router.push('/auth/otp');
+      router.refresh();
+    } catch(error: any){
+      const errorMessage = error.response?.data?.message || "Signup failed";
+      toast.error(errorMessage, { id: loadingToast });
+    }
+  };
+
   return (
     <div className="w-full h-full flex justify-center items-center">
-        <form action="" className='bg-white h-4/5 flex flex-col justify-center gap-5 items-center p-5 rounded-2xl shadow-lg w-3/5 mt-25 hover:shadow-xl hover:scale-101 transition-transform duration-500 ease-in-out'>
+        <form action="" className='bg-white h-4/5 flex flex-col justify-center gap-5 items-center p-5 rounded-2xl shadow-lg w-3/5 mt-25 hover:shadow-xl hover:scale-101 transition-transform duration-500 ease-in-out' onSubmit={handleSubmit}>
 
         <h1 className='text-2xl font-bold text-black'>Create Account</h1>
 
@@ -28,6 +59,8 @@ const SignupForm = () => {
             autoComplete="username"
             placeholder="Enter username"
             className='h-10 w-5/6 rounded-xl border border-gray-300 bg-white px-4 text-black focus:outline-none focus:ring-2 focus:ring-gray-400'
+            onChange={(e) => setName(e.target.value)}
+            required
           />
 
           <input
@@ -37,6 +70,8 @@ const SignupForm = () => {
             autoComplete="email"
             placeholder="Enter email"
             className='h-10 w-5/6 rounded-xl border border-gray-300 bg-white px-4 text-black focus:outline-none focus:ring-2 focus:ring-gray-400'
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
 
           <div className='relative w-5/6'>
@@ -47,6 +82,8 @@ const SignupForm = () => {
               autoComplete="current-password"
               placeholder="Enter password"
               className='h-10 w-full rounded-xl border border-gray-300 bg-white px-4 pr-12 text-black focus:outline-none focus:ring-2 focus:ring-gray-400'
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
             <button
               type="button"
@@ -66,6 +103,8 @@ const SignupForm = () => {
               autoComplete="current-password"
               placeholder="Confirm password"
               className='h-10 w-full rounded-xl border border-gray-300 bg-white px-4 pr-12 text-black focus:outline-none focus:ring-2 focus:ring-gray-400'
+              onChange={(e) => setcPassword(e.target.value)}
+              required
             />
             <button
               type="button"

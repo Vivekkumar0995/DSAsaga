@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
     default:"",
   },
  verifyOtpExpireAt:{
-  type:Number,
+  type:Date,
   default:0
  },
 isAccountVerified:{
@@ -32,7 +32,7 @@ resetOtp:{
   default:""
 },
 resetOtpExpireAt:{
-  type:Number,
+  type:Date,
   default:0
 },
 createdAt:{
@@ -45,5 +45,5 @@ default:""
 }
 })
 
-const UserModel = mongoose.model("user" , userSchema)
+const UserModel = mongoose.models.user || mongoose.model("user", userSchema);
 export default UserModel
