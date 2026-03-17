@@ -4,17 +4,47 @@ import {InputOtp, Button} from "@heroui/react";
 import Bloom from '@/components/Bloom'
 import Navbar from "@/components/Navbar"
 import Link from "next/link";
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 export default function App() {
-  const [value, setValue] = React.useState("");
+  const router = useRouter();
+  const [otp, setOTP] = React.useState("");
 
-  async function handleSubmit (event){
+  async function handleSubmit (event: any){
+    event.preventDefault();
+    const email = localStorage.getItem('email');
+    const verifyingToast = toast.loading("Verifying...");
+    try {
+      const response = await axios.post('/api/auth/verify-otp', {otp, email});
+      toast.success(response.data.message || "OTP verified!!", { id: verifyingToast });
+      router.push('/');
+      router.refresh();
+    } catch(error: any){
+      const errorMessage = error.response?.data?.message || "Signup failed";
+      toast.error(errorMessage, { id: verifyingToast });
+    }
+  }
+
+  async function handleResend (event: any){
+    event.preventDefault();
+    const email = localStorage.getItem('email');
+    const sendingToast = toast.loading("Sending...");
+    try {
+      const otp = await axios.post('/api/auth/send-otp', {email});
+      toast.success(otp.data.message || "OTP resent! Check your email", {id: sendingToast});
+      router.refresh();
+    } catch(error: any) {
+      const errorMessage = error.response?.data?.message || "Failed to send OTP";
+      toast.error(errorMessage, {id: sendingToast});
+    }
   }
 
   const keepCaretAtCurrentIndex = (event: React.FocusEvent<HTMLElement> | React.MouseEvent<HTMLElement>) => {
     const input = event.currentTarget.querySelector("input");
     if (!input) return;
-    const nextIndex = Math.min(value.length, 6);
+    const nextIndex = Math.min(otp.length, 6);
     requestAnimationFrame(() => {
       input.setSelectionRange(nextIndex, nextIndex);
     });
@@ -36,7 +66,7 @@ export default function App() {
               isRequired
               fullWidth={false}
               length={6}
-              value={value}
+              value={otp}
               color="primary"
               variant="bordered"
               radius="lg"
@@ -47,11 +77,11 @@ export default function App() {
                 description: "w-full text-left",
                 errorMessage: "w-full text-center",
               }}
-              onValueChange={setValue}
+              onValueChange={setOTP}
               onFocus={keepCaretAtCurrentIndex}
               onClick={keepCaretAtCurrentIndex}
             />
-            <Link href="" className="w-full pr-8 -mt-4 text-right text-sm text-blue-600 hover:text-blue-400">Resend OTP</Link>
+            <Link href="" className="w-full pr-8 -mt-4 text-right text-sm text-blue-600 hover:text-blue-400" onClick={handleResend}>Resend OTP</Link>
             <Button className="max-w-fit bg-linear-to-tr from-cyan-500 to-blue-300 text-white shadow-lg" type="submit" variant="flat">
               Verify OTP
             </Button>
