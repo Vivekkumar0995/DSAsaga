@@ -47,7 +47,11 @@ const LoginForm = () => {
               {showPassword ? <FiEyeOff className='text-sm' /> : <FiEye className='text-sm' />}
             </button>
           </div>
-          
+
+          <Link href="/auth/forgot-password" className='text-blue-500 hover:underline flex self-end mr-10 text-xs'>
+            Forgot Password?
+          </Link>
+
           <button type="submit" className='w-5/6 bg-black hover:bg-black text-white py-2 px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-400 hover:cursor-pointer'>
             Continue
           </button>

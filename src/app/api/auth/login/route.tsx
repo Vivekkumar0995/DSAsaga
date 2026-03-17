@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export async function POST(req :NextRequest){
-try{
+try{ 
    await dbconnect();
  const {email ,password}  = await req.json();
 
@@ -31,7 +31,7 @@ if(!isPasswordMatch){
   {expiresIn:'7d'}
  );
 
-  const response =NextResponse.json(
+  const response = NextResponse.json(
     {message:"Login SucessFully",name:user.name},{status:201})
 
   response.cookies.set("token" ,token ,{

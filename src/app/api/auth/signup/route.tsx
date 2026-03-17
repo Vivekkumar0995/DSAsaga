@@ -4,7 +4,7 @@ import dbconnect from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 
 export async function POST(req : NextRequest){
-
+ 
  try{
    await dbconnect();
     const {name , password ,email} = await req.json();
