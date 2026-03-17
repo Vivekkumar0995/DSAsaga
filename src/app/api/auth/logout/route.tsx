@@ -1,5 +1,6 @@
 import {NextResponse } from "next/server"
 
+
 export async function POST(){
 
   try{
@@ -20,4 +21,5 @@ export async function POST(){
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
+
 }
