@@ -18,7 +18,8 @@ export async function POST(req : NextRequest){
       name,
       email,
       password: hashPassword,
-      isAccountVerified: false,
+      isAccountVerified: false, 
+      lastLoginAt: new Date(),
     });
   return NextResponse.json({message:"Account created!!" , userId :user._id},{status:201})
  }

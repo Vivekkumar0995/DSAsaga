@@ -25,7 +25,10 @@ export async function POST(req :NextRequest){
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if(!isPasswordMatch){
       return NextResponse.json({message:"Wrong password"},{status:400})
-    }
+    } 
+
+    user.lastLoginAt = new Date();
+    await user.save();
 
     const token = jwt.sign( 
       {userId:user._id},process.env.SECRET!,
