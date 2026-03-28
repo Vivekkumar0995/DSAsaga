@@ -5,10 +5,13 @@ import { FcGoogle } from "react-icons/fc";
 import React, { useState } from 'react'
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const LoginForm = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') || '/';
+  const params = new URLSearchParams({ next: next });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,7 +23,7 @@ const LoginForm = () => {
     try {
       const response = await axios.post('/api/auth/login', {email, password});
       toast.success(response.data.message || "Successfully logged in!", { id: loadingToast });
-      router.push('/');
+      router.push(next);
       router.refresh();
     } catch(error: any){
       const errorMessage = error.response?.data?.message || "Login failed";
@@ -73,7 +76,7 @@ const LoginForm = () => {
             </button>
           </div>
 
-          <Link href="/auth/forgot-password" className='text-blue-500 hover:underline flex self-end mr-10 text-xs'>
+          <Link href={`/auth/forgot-password?${params.toString()}`} className='text-blue-500 hover:underline flex self-end mr-10 text-xs'>
             Forgot Password?
           </Link>
 
@@ -81,7 +84,7 @@ const LoginForm = () => {
             Continue
           </button>
           <p className='text-black text-sm'>
-            Don't have an account? <Link href="/auth/signup" className='text-blue-500 hover:underline'>Sign up</Link>
+            Don't have an account? <Link href={`/auth/signup?${params.toString()}`} className='text-blue-500 hover:underline'>Sign up</Link>
           </p>
         </form>
     </div>

@@ -2,6 +2,8 @@ import dbconnect from "@/lib/mongodb";
 import UserModel from "@/models/user_model";
 import { NextRequest, NextResponse } from "next/server";
 import {Resend} from "resend"
+import React from "react";
+import { OTPTemplate } from "@/components/OTPTemplate";
 
 export async function POST(req:NextRequest){
   try{
@@ -9,6 +11,7 @@ export async function POST(req:NextRequest){
     const otp = Math.floor(Math.random() * 900000 + 100000).toString();
     const {email} = await req.json();
 
+    if(!email) return NextResponse.json({message:"Email is required"}, {status:400})
 
     const expiry = Date.now() + 5 * 60 * 1000;
     const user = await UserModel.findOneAndUpdate(
@@ -20,16 +23,16 @@ export async function POST(req:NextRequest){
     const resend  = new Resend(process.env.RESEND_API_KEY);
 
     await resend.emails.send({
-      from:"onboarding@resend.dev",
-      to:email,
+      from: "DSA Saga <no-reply@dsasaga.in>",
+      to: email,
       subject:"OTP for email verification on DSAsaga",
-      html:`<h2>Your OTP is ${otp}</h2>`
+      react: React.createElement(OTPTemplate, { otp: otp })
     });
 
 
-    return NextResponse.json({ message: "Check your email for verification OTP" });
+    return NextResponse.json({ message: "Check your email for verification OTP" }, { status: 200 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "An Server Error occurred while sending OTP";
+    const message = error instanceof Error ? error.message : "A Server Error occurred while sending OTP";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
