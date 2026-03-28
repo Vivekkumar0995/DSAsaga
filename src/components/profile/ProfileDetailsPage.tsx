@@ -202,7 +202,7 @@ const ProfileDetailsPage = () => {
       toast.error(message, { id: loadingToast });
     } finally {
       setIsUploadingImage(false);
-      input.value = "";
+      input.value = ""; 
     }
   };
 

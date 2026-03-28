@@ -1,5 +1,5 @@
 import Navbar from '@/components/Navbar';
-import ProfileDetailsPage from '@/components/ProfileDetailsPage';
+import ProfileDetailsPage from '@/components/profile/ProfileDetailsPage';
 import React from 'react'
 
 const edit = () => {
@@ -9,7 +9,7 @@ const edit = () => {
         <div className="pt-28">
           <ProfileDetailsPage/>
         </div>
-    </div>
+    </div> 
   )
 }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import Navbar from "@/components/Navbar";
-import ProfileHeader from "@/components/ProfileHeader";
+import ProfileHeader from "@/components/profile/ProfileHeader";
 import Sidebar from "@/components/Sidebar";
 
 const profile = () => {
