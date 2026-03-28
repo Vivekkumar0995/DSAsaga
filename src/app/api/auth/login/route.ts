@@ -31,12 +31,13 @@ export async function POST(req :NextRequest){
     await user.save();
 
     const token = jwt.sign( 
-      {userId:user._id},process.env.SECRET!,
+      {userId:user._id},
+      process.env.SECRET!,
       {expiresIn:'7d'}
     );
 
     const response = NextResponse.json(
-      {message:"Logged in SucessFully",name:user.name},{status:201})
+      {message:"Logged in SucessFully", name:user.name},{status:201})
 
       response.cookies.set("token", token, {
         httpOnly :true,

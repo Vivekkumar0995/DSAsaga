@@ -2,11 +2,32 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {FiTarget,FiBarChart2,FiUsers,FiAward,FiBookOpen,FiUser,FiSettings,FiLogOut,} from "react-icons/fi";
+import axios from "axios";
+import router from "next/router";
+import toast from "react-hot-toast";
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      const loadingToast = toast.loading("Logging out...");
+  
+      try {
+        const response = await axios.post("/api/auth/logout");
+        toast.success(response.data.message || "Logged out!", { id: loadingToast });
+        router.push("/");
+        router.refresh();
+      } catch (error: unknown) {
+        const errorMessage = axios.isAxiosError(error)
+          ? error.response?.data?.message || "Logout failed"
+          : "Logout failed";
+        toast.error(errorMessage, { id: loadingToast });
+      }
+    };
 
   return (
     <div className="sticky top-28 ml-4 h-[calc(100vh-8rem)] w-70 overflow-hidden bg-white/20 backdrop-blur-xs border border-white/40 flex flex-col p-6 rounded-2xl shadow-[0_12px_36px_rgba(15,23,42,0.18)]">
@@ -37,7 +58,7 @@ const Sidebar: React.FC = () => {
       </div>
 
       <div className="mt-4">
-        <button className="flex items-center gap-3 text-red-500 hover:bg-red-50 w-full px-3 py-2 rounded-lg transition cursor-pointer">
+        <button onClick={handleLogout} className="flex items-center gap-3 text-red-500 hover:bg-red-50 w-full px-3 py-2 rounded-lg transition cursor-pointer">
           <FiLogOut />
           Logout
         </button>
