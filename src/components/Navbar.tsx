@@ -1,10 +1,45 @@
 "use client";
 import Link from "next/link";
 import React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import axios from "axios";
+import toast from "react-hot-toast";
 
-const Navbar = () => {
+type AuthUser = {
+  userId?: string;
+} | null;
+
+type NavbarProps = {
+  initialUser: AuthUser;
+};
+
+const Navbar = ({ initialUser }: NavbarProps) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = React.useState<AuthUser>(initialUser);
+
+  React.useEffect(() => {
+    setUser(initialUser);
+  }, [initialUser]);
+
+  const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const loadingToast = toast.loading("Logging out...");
+
+    try {
+      const response = await axios.post("/api/auth/logout");
+      toast.success(response.data.message || "Logged out!", { id: loadingToast });
+      setUser(null);
+      router.push("/");
+      router.refresh();
+    } catch (error: unknown) {
+      const errorMessage = axios.isAxiosError(error)
+        ? error.response?.data?.message || "Logout failed"
+        : "Logout failed";
+      toast.error(errorMessage, { id: loadingToast });
+    }
+  };
+
   return (
     <div className="fixed top-0 left-0 w-full flex justify-center z-10 pointer-events-none">
       <nav className="pointer-events-auto h-14 bg-white/20 backdrop-blur-xs align-middle flex items-center mt-6 mb-6 p-6 gap-10 rounded-full w-11/12 shadow-[10px_10px_15px_-3px_rgba(0,0,0,0.1)] border border-gray-300/60 hover:shadow-[10px_10px_15px_-3px_rgba(0,0,0,0.12)] hover:scale-101 transition-transform duration-500 ease-in-out">
@@ -16,10 +51,15 @@ const Navbar = () => {
             <Link href="/" className="text-lg">
               Home
             </Link>
-            {pathname != "/auth/login" && (
-            <Link href="/auth/login" className="text-lg">
-              Login
-            </Link>
+            {!user && pathname !== "/auth/login" && (
+              <Link href="/auth/login" className="text-lg">
+                Login
+              </Link>
+            )}
+            {user && (
+              <button type="button" onClick={handleLogout} className="text-lg cursor-pointer">
+                Logout
+              </button>
             )}
           </div>
         </div>

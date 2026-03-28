@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
 import {Providers} from "./providers";
 import { Toaster } from 'react-hot-toast';
+import { decrypt } from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,17 +22,26 @@ export const metadata: Metadata = {
   description: "Gamified DSA for better understanding",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const payload = token ? await decrypt(token) : null;
+  const initialUser =
+    payload && typeof payload === "object" && "userId" in payload && payload.userId
+      ? { userId: String(payload.userId) }
+      : null;
+
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+          <Navbar initialUser={initialUser} />
           {children}
           <Toaster position="top-center" reverseOrder={false} />
         </Providers>

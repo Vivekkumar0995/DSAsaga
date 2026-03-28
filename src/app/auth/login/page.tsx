@@ -1,13 +1,11 @@
 "use client"
 import LoginForm from '@/components/LoginForm'
-import Navbar from '@/components/Navbar'
 import Bloom from '@/components/Bloom'
 import React from 'react'
 
 const login = () => {
   return (
     <div>
-      <Navbar />
       <div className="flex items-center h-screen w-full">
         <div className='h-full w-3/5 flex justify-center items-center font-extrabold text-5xl text-white text-shadow-black text-shadow-sm'>
           <Bloom/>
