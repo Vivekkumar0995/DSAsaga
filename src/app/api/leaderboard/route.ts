@@ -26,6 +26,7 @@ export async function GET() {
 
       leaderboardData = redisTopIds
         .map((id: string) => entries.find(e => e.userId?._id?.toString() === id.toString()))
+        .filter(Boolean);
 
     } else {
       console.log("Redis is empty. Fetching from Mongo & Populating Redis... 🐢");

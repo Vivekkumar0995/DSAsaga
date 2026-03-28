@@ -31,16 +31,8 @@
     "react-icons": "^5.6.0",
     "react-typed": "^2.0.12",
     "resend": "^6.9.3",
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "three": "^0.183.2"
-=======
+    "three": "^0.183.2",
     "world-countries": "^5.1.0"
->>>>>>> ab012e0173bec750cd9ebb2129561a428d8bcf91
-=======
-    "three": "^0.183.2"
-    "world-countries": "^5.1.0"
->>>>>>> 0a416aa0d1677491b0aa013f69ad25170858e6a8
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -49,17 +41,13 @@
     "@types/nodemailer": "^7.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.183.1",
     "autoprefixer": "^10.4.27",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
-    "@types/three": "^0.183.1",
-    "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^10.1.0",
-    "eslint-config-next": "^0.2.4",
-    "tailwindcss": "^4",
     "typescript": "^5"
   }
 }
