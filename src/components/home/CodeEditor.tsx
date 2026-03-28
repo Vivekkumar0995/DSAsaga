@@ -127,7 +127,7 @@ const TypewriterText = ({
     if (typedLength < currentLine.length) {
       const charTimer = window.setTimeout(
         () => setTypedLength((prev) => prev + 1),
-        Math.max(12, typeSpeed + Math.floor(Math.random() * 24) - 8)
+        Math.max(12, typeSpeed + Math.floor(((typedLength * 7) % 24)) - 8)
       );
 
       return () => window.clearTimeout(charTimer);
@@ -316,7 +316,7 @@ const CodeEditor = ({ }: CodeEditorProps) => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .editor-frame {
           background: linear-gradient(
             132deg,
@@ -403,7 +403,7 @@ const CodeEditor = ({ }: CodeEditorProps) => {
             transform: translateY(-4px);
           }
         }
-      `}</style>
+      `}} />
     </div>
   );
 };
