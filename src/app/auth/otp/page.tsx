@@ -2,14 +2,17 @@
 import React from "react";
 import {InputOtp, Button} from "@heroui/react";
 import Bloom from '@/components/Bloom'
-import Navbar from "@/components/Navbar"
 import Link from "next/link";
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function App() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') || '/';
+  const params = new URLSearchParams({ next: next });
+
   const [otp, setOTP] = React.useState("");
 
   async function handleSubmit (event: any){
@@ -19,7 +22,7 @@ export default function App() {
     try {
       const response = await axios.post('/api/auth/verify-otp', {otp, email});
       toast.success(response.data.message || "OTP verified!!", { id: verifyingToast });
-      router.push('/');
+      router.push(next);
       router.refresh();
     } catch(error: any){
       const errorMessage = error.response?.data?.message || "Signup failed";
@@ -53,7 +56,6 @@ export default function App() {
 
   return (
     <div>
-      <Navbar />
       <div className="flex items-center h-screen w-full">
         <div className='h-full w-3/5 flex justify-center items-center font-extrabold text-5xl text-white text-shadow-black text-shadow-sm'>
           <Bloom/>
@@ -81,7 +83,7 @@ export default function App() {
               onFocus={keepCaretAtCurrentIndex}
               onClick={keepCaretAtCurrentIndex}
             />
-            <Link href="" className="w-full pr-8 -mt-4 text-right text-sm text-blue-600 hover:text-blue-400" onClick={handleResend}>Resend OTP</Link>
+            <p className="w-fit pr-8 -mt-4 text-right text-sm text-blue-600 hover:text-blue-400 hover:underline cursor-pointer ml-52" onClick={handleResend}>Resend OTP</p>
             <Button className="max-w-fit bg-linear-to-tr from-cyan-500 to-blue-300 text-white shadow-lg" type="submit" variant="flat">
               Verify OTP
             </Button>

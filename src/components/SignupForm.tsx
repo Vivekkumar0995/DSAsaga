@@ -5,10 +5,13 @@ import { FcGoogle } from "react-icons/fc";
 import React, { useState } from 'react'
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const SignupForm = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') || '/';
+  const params = new URLSearchParams({ next: next });
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,7 +34,7 @@ const SignupForm = () => {
       const otp = await axios.post('/api/auth/send-otp', {email});
       localStorage.setItem('email', email);
       toast.success(otp.data.message || "Check your email for OTP");
-      router.push('/auth/otp');
+      router.push(`/auth/otp?${params.toString()}`);
       router.refresh();
     } catch(error: any){
       const errorMessage = error.response?.data?.message || "Signup failed";
@@ -119,7 +122,7 @@ const SignupForm = () => {
             Continue
           </button>
           <p className='text-black text-sm'>
-            Already have an account? <Link href="/auth/login" className='text-blue-500 hover:underline'>Log in</Link>
+            Already have an account? <Link href={`/auth/login?${params.toString()}`} className='text-blue-500 hover:underline'>Log in</Link>
           </p>
         </form>
     </div>

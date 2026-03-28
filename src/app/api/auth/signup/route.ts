@@ -1,4 +1,5 @@
 import UserModel from "@/models/user_model";
+import LeaderboardModel from "@/models/leaderboard_model";
 import { NextRequest, NextResponse } from "next/server";
 import dbconnect from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
@@ -21,6 +22,15 @@ export async function POST(req : NextRequest){
       isAccountVerified: false, 
       lastLoginAt: new Date(),
     });
+
+    // Create a default leaderboard entry for the new user
+    await LeaderboardModel.create({
+      userId: user._id,
+      score: 0,
+      problemsSolved: 0,
+      rank: "Beginner"
+    });
+
   return NextResponse.json({message:"Account created!!" , userId :user._id},{status:201})
  }
  catch (error: unknown) {

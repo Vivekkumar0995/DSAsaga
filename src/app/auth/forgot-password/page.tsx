@@ -1,5 +1,4 @@
 "use client"
-import Navbar from '@/components/Navbar'
 import Bloom from '@/components/Bloom'
 import React from 'react'
 import ForgotForm from '@/components/ForgotForm'
@@ -7,7 +6,6 @@ import ForgotForm from '@/components/ForgotForm'
 const ForgotPassword = () => {
   return (
     <div>
-      <Navbar />
       <div className="flex items-center h-screen w-full">
         <div className='h-full w-3/5 flex justify-center items-center font-extrabold text-5xl text-white text-shadow-black text-shadow-sm'>
           <Bloom/>
