@@ -100,7 +100,7 @@ export default function LeaderboardPage() {
       <div className="fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-indigo-100/50 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="fixed bottom-1/4 right-1/4 w-[400px] h-[400px] bg-slate-100/60 rounded-full blur-[100px] pointer-events-none"></div>
 
-      <div className="relative max-w-5xl mx-auto z-10 w-full">
+      <div className="relative max-w-5xl mt-30 mx-auto z-10 w-full">
         <h1 className="text-5xl font-extrabold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-600 to-slate-900 drop-shadow-sm tracking-tight">
           Hall of Fame
         </h1>

@@ -3,6 +3,7 @@ import LeaderboardModel from "@/models/leaderboard_model";
 import { NextRequest, NextResponse } from "next/server";
 import dbconnect from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
+import { redis } from "@/lib/redis";
 
 export async function POST(req : NextRequest){
   try{
@@ -19,7 +20,7 @@ export async function POST(req : NextRequest){
       name,
       email,
       password: hashPassword,
-      isAccountVerified: false, 
+      isAccountVerified: false,
       lastLoginAt: new Date(),
     });
 
@@ -30,6 +31,9 @@ export async function POST(req : NextRequest){
       problemsSolved: 0,
       rank: "Beginner"
     });
+
+    // Add new user to the redis leaderboard with 0 score
+    await redis.zadd("leaderboard", { score: 0, member: user._id.toString() });
 
   return NextResponse.json({message:"Account created!!" , userId :user._id},{status:201})
  }
