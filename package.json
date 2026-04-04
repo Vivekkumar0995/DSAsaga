@@ -9,11 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@chenglou/pretext": "^0.0.4",
     "@heroui/react": "^2.8.10",
     "@react-email/components": "^1.0.10",
     "@react-email/render": "^2.0.4",
     "@upstash/redis": "^1.37.0",
-    "axios": "^1.13.6",
+    "axios": "1.13.6",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "framer-motion": "^12.36.0",

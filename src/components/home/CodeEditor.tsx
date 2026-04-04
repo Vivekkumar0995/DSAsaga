@@ -287,7 +287,7 @@ const CodeEditor = ({ }: CodeEditorProps) => {
               <button
                 key={key}
                 onClick={() => handleManualClick(index)}
-                className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-md font-semibold transition-all duration-300 border ${
+                className={`cursor-pointer text-[11px] sm:text-xs px-3 py-1.5 rounded-md font-semibold transition-all duration-300 border ${
                   currentSnippetIndex === index
                     ? "bg-[#37373D] border-[#4F9CEE] text-[#E8F3FF] shadow-[0_0_0_1px_rgba(79,156,238,0.35)]"
                     : "bg-[#2D2D30] border-[#3E3E42] text-[#B8C0CC] hover:bg-[#3A3A40]"
@@ -362,36 +362,10 @@ const CodeEditor = ({ }: CodeEditorProps) => {
           background: linear-gradient(180deg, #9cdcfe, #4fc1ff);
           vertical-align: text-bottom;
           border-radius: 2px;
-          animation: caretBlink 0.95s steps(1, end) infinite;
         }
 
         .code-line {
-          opacity: 0;
-          transform: translateY(5px);
-          animation: lineReveal 340ms ease-out forwards;
           line-height: 1.65;
-        }
-
-        @keyframes caretBlink {
-          0%,
-          48% {
-            opacity: 1;
-          }
-          50%,
-          100% {
-            opacity: 0;
-          }
-        }
-
-        @keyframes lineReveal {
-          from {
-            opacity: 0;
-            transform: translateY(5px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
 
         @keyframes shellFloat {
