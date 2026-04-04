@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: 0,
   },
+  resetOtpVerifiedTill: {
+    type: Date,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

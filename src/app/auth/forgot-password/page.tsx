@@ -1,9 +1,20 @@
-"use client"
 import Bloom from '@/components/Bloom'
 import React from 'react'
 import ForgotForm from '@/components/ForgotForm'
+import { cookies } from "next/headers";
+import { decrypt } from "@/lib/auth";
 
-const ForgotPassword = () => {
+const ForgotPassword = async () => {
+
+  const cookieStore = await cookies();
+  const reset = cookieStore.get("resetPassword")?.value;
+  const resetPayload = reset ? await decrypt(reset) : null;
+  const resetUser =
+    resetPayload && typeof resetPayload === "object" && "userId" in resetPayload && resetPayload.userId
+      ? { userId: String(resetPayload.userId)}
+      : null;
+
+
   return (
     <div>
       <div className="flex items-center h-screen w-full">
@@ -12,7 +23,7 @@ const ForgotPassword = () => {
         </div>
 
         <div className='h-full w-2/5 bg-gray-100 flex justify-center items-center'>
-          <ForgotForm />
+          <ForgotForm resetUser={resetUser}/>
         </div>
       </div>
     </div>

@@ -31,7 +31,7 @@ const SignupForm = () => {
     try {
       const response = await axios.post('/api/auth/signup', {name, email, password});
       toast.success(response.data.message || "Accound created successfully!!", { id: loadingToast });
-      const otp = await axios.post('/api/auth/send-otp', {email});
+      const otp = await axios.post('/api/auth/send-otp', {email: email, forWhat: "verify-and-signup"});
       localStorage.setItem('email', email);
       toast.success(otp.data.message || "Check your email for OTP");
       router.push(`/auth/otp?${params.toString()}`);

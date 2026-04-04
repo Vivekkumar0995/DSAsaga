@@ -28,6 +28,10 @@ const LoginForm = () => {
     } catch(error: any){
       const errorMessage = error.response?.data?.message || "Login failed";
       toast.error(errorMessage, { id: loadingToast });
+      if (error.response?.data?.next) {
+        router.push(error.response.data.next + "?" + params.toString());
+        router.refresh();
+      }
     }
   };
 

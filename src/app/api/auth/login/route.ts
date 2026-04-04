@@ -1,5 +1,6 @@
 import { NextRequest ,NextResponse } from "next/server";
 import dbconnect from "@/lib/mongodb";
+import sendOTP from "@/lib/sendOTP";
 import UserModel from "@/models/user_model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -7,7 +8,7 @@ import jwt from "jsonwebtoken";
 export async function POST(req :NextRequest){
   try{
     await dbconnect();
-    const {email ,password}  = await req.json();
+    const {email, password}  = await req.json();
 
     if(!email || !password){
       return NextResponse.json({message:"email and password Required"},{status:400})
@@ -19,7 +20,32 @@ export async function POST(req :NextRequest){
     }
 
     if(!user.isAccountVerified){
-      return NextResponse.json({message:"Please verify your email first"},{status:403})
+      const otp = Math.floor(Math.random() * 900000 + 100000).toString();
+      const expiry = Date.now() + 5 * 60 * 1000;
+      await UserModel.findOneAndUpdate(
+        { email },
+        { verifyOtp: otp, verifyOtpExpireAt: expiry },
+        { new: true }
+      );
+      const result = await sendOTP(email, otp);
+      if(!result.success) throw new Error(result.message);
+      const otpForWhat = jwt.sign( 
+        {userId:user._id, otpForWhat: "verification"},
+        process.env.SECRET!,
+        {expiresIn:'5m'}
+      );
+
+      const response = NextResponse.json(
+        {message:"Verify your email first. " + result.message, next: "/auth/otp"},{status:403})
+
+        response.cookies.set("otpForWhat", otpForWhat, {
+          httpOnly :true,
+          secure: process.env.NODE_ENV === "production",
+          maxAge:5*60,
+          sameSite: "strict",
+          path:'/'
+      });
+      return response;
     }
 
     const isPasswordMatch = await bcrypt.compare(password, user.password);
