@@ -6,8 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "preinstall": "npx --yes only-allow pnpm"
   },
+  "packageManager": "pnpm@11.1.2",
   "dependencies": {
     "@chenglou/pretext": "^0.0.4",
     "@heroui/react": "^2.8.10",
