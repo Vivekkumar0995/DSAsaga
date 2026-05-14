@@ -13,3 +13,7 @@ allowBuilds:
   esbuild: true
   unrs-resolver: true
   "*": false
+
+
+publicHoistPattern:
+  - '*@heroui/*'
