@@ -19,7 +19,7 @@ const LoginForm = () => {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     const loadingToast = toast.loading("Logging in...");
-
+    localStorage.setItem('email', email);
     try {
       const response = await axios.post('/api/auth/login', {email, password});
       toast.success(response.data.message || "Successfully logged in!", { id: loadingToast });
