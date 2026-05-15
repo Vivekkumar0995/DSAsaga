@@ -277,7 +277,7 @@ const ProfileHeader = ({
     <div className="relative inline-block">
       <div className="relative h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-lg">
         <img
-          src={profileImage || "/images/white.png"}
+          src={profileImage || "/images/white.jpg"}
           alt="."
           className="h-full w-full object-cover"
         />

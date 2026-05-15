@@ -1,6 +1,6 @@
 import {Resend} from "resend"
 import React from "react";
-import { OTPTemplate } from "@/components/OTPTemplate";
+import { OTPTemplate } from "@/components/api/OTPTemplate";
 
 
 const sendOTP = async (email: string, otp: string) => {

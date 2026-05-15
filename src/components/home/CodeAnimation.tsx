@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 
-interface CodeEditorProps {
+interface CodeAnimationProps {
   user?: {
     name: string;
     score: number;
@@ -246,7 +246,7 @@ const codeSnippets = {
   },
 };
 
-const CodeEditor = ({ }: CodeEditorProps) => {
+const CodeAnimation = ({ }: CodeAnimationProps) => {
   const [hovered, setHovered] = useState(false);
   const [currentSnippetIndex, setCurrentSnippetIndex] = useState(0);
   const [rerunKey, setRerunKey] = useState(0);
@@ -382,4 +382,4 @@ const CodeEditor = ({ }: CodeEditorProps) => {
   );
 };
 
-export default CodeEditor;
+export default CodeAnimation;

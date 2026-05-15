@@ -44,7 +44,7 @@ const SignupForm = () => {
 
   return (
     <div className="w-full h-full flex justify-center items-center">
-        <form action="" className='bg-white h-4/5 flex flex-col justify-center gap-5 items-center p-5 rounded-2xl shadow-lg w-3/5 mt-25 hover:shadow-xl hover:scale-101 transition-transform duration-500 ease-in-out' onSubmit={handleSubmit}>
+        <form action="" className='bg-white flex flex-col justify-center gap-5 items-center p-5 rounded-2xl shadow-lg w-3/5 mt-25 hover:shadow-xl hover:scale-101 transition-transform duration-500 ease-in-out' onSubmit={handleSubmit}>
 
         <h1 className='text-2xl font-bold text-black'>Create Account</h1>
 
@@ -55,7 +55,7 @@ const SignupForm = () => {
 
           <p className='text-gray-500' >OR</p>
 
-            <input
+          <input
             id="username"
             name="username"
             type="text"

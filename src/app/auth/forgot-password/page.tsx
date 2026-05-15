@@ -1,6 +1,6 @@
-import Bloom from '@/components/Bloom'
+import Bloom from '@/components/auth/Bloom'
 import React from 'react'
-import ForgotForm from '@/components/ForgotForm'
+import ForgotForm from '@/components/auth/ForgotForm'
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/auth";
 
