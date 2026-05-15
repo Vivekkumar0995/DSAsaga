@@ -1,4 +1,4 @@
-import Navbar from '@/components/Navbar';
+import Navbar from '@/components/ui/Navbar';
 import ProfileDetailsPage from '@/components/profile/ProfileDetailsPage';
 import React from 'react'
 

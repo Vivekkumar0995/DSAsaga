@@ -37,7 +37,7 @@ const LoginForm = () => {
 
   return (
     <div className="w-full h-full flex justify-center items-center">
-        <form onSubmit={handleSubmit} className='bg-white h-3/5 flex flex-col justify-center gap-5 items-center p-5 rounded-2xl shadow-lg w-3/5 mt-25 hover:shadow-xl hover:scale-101 transition-transform duration-500 ease-in-out'>
+        <form onSubmit={handleSubmit} className='bg-white flex flex-col justify-center gap-5 items-center p-5 rounded-2xl shadow-lg w-3/5 mt-25 hover:shadow-xl hover:scale-101 transition-transform duration-500 ease-in-out'>
 
         <h1 className='text-2xl font-bold text-black'>Welcome Back</h1>
 

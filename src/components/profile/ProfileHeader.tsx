@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
+import Loading from "@/app/loading";
 
 const ProfileHeader = () => {
   const bannerImageInputRef = useRef<HTMLInputElement>(null);
@@ -99,7 +100,7 @@ const ProfileHeader = () => {
   const address = userData?.address || userData?.location;
 
   if (loading) {
-    return <div className="p-10 text-center">Loading...</div>;
+    return <Loading />;
   }
   return (
     <div className="w-full space-y-6 mb-10">
@@ -151,7 +152,7 @@ const ProfileHeader = () => {
             <div className="absolute -bottom-12 left-6 md:left-8">
               <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white overflow-hidden bg-slate-900 shadow-md">
                 <Image
-                  src={userData?.profileImage || "/images/white.png"}
+                  src={userData?.profileImage || "/images/white.jpg"}
                   alt="profile"
                   width={115}
                   height={115}
@@ -199,80 +200,6 @@ const ProfileHeader = () => {
               >
                 <FiSettings /> Settings
               </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* MAIN GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* LEFT */}
-          <div className="space-y-6">
-            {/* STREAK */}
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="text-gray-500 text-sm">Streak</h3>
-              <p className="text-3xl font-bold mt-2">🔥 7 Days</p>
-            </div>
-
-            {/* DAILY TARGET */}
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="text-gray-500 text-sm flex items-center gap-2">
-                <FiTarget /> Daily Target
-              </h3>
-
-              <div className="mt-3">
-                <div className="w-full bg-gray-200 h-2 rounded-full">
-                  <div className="bg-black h-2 rounded-full w-[70%]" />
-                </div>
-                <p className="text-sm mt-2 text-gray-600">7 / 10 completed</p>
-              </div>
-            </div>
-
-            {/* ACHIEVEMENTS */}
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="text-gray-500 text-sm flex items-center gap-2">
-                <FiAward /> Achievements
-              </h3>
-              <ul className="mt-3 text-sm text-gray-600 space-y-2">
-                <li>🥇 100 Problems Solved</li>
-                <li>🔥 7 Day Streak</li>
-                <li>⚔️ First Battle Win</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* RIGHT */}
-          <div className="md:col-span-2 space-y-6">
-            {/* STATS */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard title="Problems" value="120" icon={<FiTrendingUp />} />
-              <StatCard title="Battles" value="45" icon={<FiAward />} />
-              <StatCard title="Accuracy" value="82%" icon={<FiTarget />} />
-              <StatCard title="Avg Time" value="15m" icon={<FiClock />} />
-            </div>
-
-            {/* SIMPLE CHART */}
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="text-gray-500 text-sm mb-4">Weekly Activity</h3>
-
-              <div className="flex items-end gap-3 h-32">
-                {[40, 60, 30, 80, 50, 70, 90].map((h, i) => (
-                  <div
-                    key={i}
-                    className="bg-black/80 w-6 rounded"
-                    style={{ height: `${h}%` }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* RECENT ACTIVITY */}
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="text-gray-500 text-sm mb-3">Recent Activity</h3>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>✅ Solved Two Sum</li>
-                <li>⚔️ Won battle vs Alex</li>
-                <li>🎯 Completed daily target</li>
-              </ul>
             </div>
           </div>
         </div>

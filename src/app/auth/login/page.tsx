@@ -1,6 +1,6 @@
 "use client"
-import LoginForm from '@/components/LoginForm'
-import Bloom from '@/components/Bloom'
+import LoginForm from '@/components/auth/LoginForm'
+import Bloom from '@/components/auth/Bloom'
 import React from 'react'
 
 const login = () => {

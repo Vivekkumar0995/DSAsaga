@@ -1,9 +1,10 @@
 "use client";
 import React, { useRef, useState } from "react";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
-import CodeEditor from "./CodeEditor";
+import CodeAnimation from "./CodeAnimation";
 
-const Hero = () => {
+const HomePage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -62,14 +63,16 @@ const Hero = () => {
           </p>
 
           <div className="flex gap-4">
-            <Button label="Get Started" />
+            <Link href="/play">
+              <Button label="Get Started" />
+            </Link>
             <button className="text-sm underline text-black">
-              Learn More →
+              Learn More
             </button>
           </div>
           </div>
 
-      <div> <CodeEditor/></div>
+      <div> <CodeAnimation/></div>
 
 
       </div>
@@ -77,4 +80,4 @@ const Hero = () => {
   );
 };
 
-export default Hero;
+export default HomePage;

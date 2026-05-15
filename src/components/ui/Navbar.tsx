@@ -51,6 +51,9 @@ const Navbar = ({ initialUser }: NavbarProps) => {
             <Link href="/" className="text-lg">
               Home
             </Link>
+            <Link href="/profile" className="text-lg">
+               Profile
+            </Link>
             {!user && pathname !== "/auth/login" && (
               <Link href="/auth/login" className="text-lg">
                 Login

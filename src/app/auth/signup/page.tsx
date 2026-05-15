@@ -1,7 +1,7 @@
 "use client"
 import React from 'react'
-import SignupForm from "@/components/SignupForm"
-import Bloom from '@/components/Bloom'
+import SignupForm from "@/components/auth/SignupForm"
+import Bloom from '@/components/auth/Bloom'
 
 const signup = () => {
   return (

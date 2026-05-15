@@ -1,6 +1,6 @@
 import React from "react";
-import Bloom from '@/components/Bloom'
-import OTPForm from "@/components/OTPForm";
+import Bloom from '@/components/auth/Bloom'
+import OTPForm from "@/components/auth/OTPForm";
 import { decrypt } from "@/lib/auth";
 import { cookies } from "next/headers";
 

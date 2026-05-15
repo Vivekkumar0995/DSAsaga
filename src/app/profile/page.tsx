@@ -1,8 +1,8 @@
 "use client"
 
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/ui/Navbar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/profile/Sidebar";
 
 const profile = () => {
   return (
