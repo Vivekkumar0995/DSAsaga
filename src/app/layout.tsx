@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
-import {Providers} from "./providers";
+import {Providers} from "../components/heroUI/providers";
 import AuthProvider from "@/components/AuthProvider";
 import { Toaster } from 'react-hot-toast';
 import { decrypt } from "@/lib/auth";

@@ -10,6 +10,7 @@ const HomePage = () => {
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
+    // console.log(rect);
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     containerRef.current.style.setProperty("--mouse-x", `${x}px`);
@@ -62,13 +63,13 @@ const HomePage = () => {
             real-world problems, and interactive learning.
           </p>
 
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <Link href="/play">
               <Button label="Get Started" />
             </Link>
-            <button className="text-sm underline text-black">
+            <Link href="" className="text-sm underline text-black">
               Learn More
-            </button>
+            </Link>
           </div>
           </div>
 
