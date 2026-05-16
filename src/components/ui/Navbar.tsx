@@ -4,6 +4,7 @@ import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useSession, signOut } from "next-auth/react";
 
 type AuthUser = {
   userId?: string;
@@ -16,6 +17,7 @@ type NavbarProps = {
 const Navbar = ({ initialUser }: NavbarProps) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [user, setUser] = React.useState<AuthUser>(initialUser);
 
   React.useEffect(() => {
@@ -27,6 +29,7 @@ const Navbar = ({ initialUser }: NavbarProps) => {
     const loadingToast = toast.loading("Logging out...");
 
     try {
+      await signOut({ redirect: false });
       const response = await axios.post("/api/auth/logout");
       toast.success(response.data.message || "Logged out!", { id: loadingToast });
       setUser(null);
@@ -54,12 +57,12 @@ const Navbar = ({ initialUser }: NavbarProps) => {
             <Link href="/profile" className="text-lg">
                Profile
             </Link>
-            {!user && pathname !== "/auth/login" && (
+            {(!user && status !== "authenticated") && pathname !== "/auth/login" && (
               <Link href="/auth/login" className="text-lg">
                 Login
               </Link>
             )}
-            {user && (
+            {(user || status === "authenticated") && (
               <button type="button" onClick={handleLogout} className="text-lg cursor-pointer">
                 Logout
               </button>
