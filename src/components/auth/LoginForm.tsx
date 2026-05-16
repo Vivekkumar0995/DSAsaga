@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from "next-auth/react";
 
 const LoginForm = () => {
   const router = useRouter();
@@ -41,7 +42,11 @@ const LoginForm = () => {
 
         <h1 className='text-2xl font-bold text-black'>Welcome Back</h1>
 
-          <button type="submit" className='w-5/6 bg-white hover:bg-gray-100 text-black py-2 px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-400 hover:cursor-pointer flex items-center justify-center gap-3 border border-gray-300'>
+          <button 
+            type="button" 
+            onClick={() => signIn("google", { callbackUrl: next })}
+            className='w-5/6 bg-white hover:bg-gray-100 text-black py-2 px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-400 hover:cursor-pointer flex items-center justify-center gap-3 border border-gray-300'
+          >
             <FcGoogle className='text-2xl shrink-0' />
             Continue with Google
           </button>

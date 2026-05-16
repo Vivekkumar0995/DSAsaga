@@ -1,8 +1,8 @@
 "use client"
 import { useEffect, useState } from "react";
-import LeaderboardTable from "@/components/LeaderboardTable";
+import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import Loading from "@/app/loading"; // Import the main loading component
-import { Top3Leaderboard, TopLeaderboardUser } from "@/components/Top3Leaderboard";
+import { Top3Leaderboard, TopLeaderboardUser } from "@/components/leaderboard/Top3Leaderboard";
 
 interface PopulatedUser{
   _id:string,
