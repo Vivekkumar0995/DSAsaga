@@ -5,6 +5,7 @@ import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import {Providers} from "../components/heroUI/providers";
+import AuthProvider from "@/components/AuthProvider";
 import { Toaster } from 'react-hot-toast';
 import { decrypt } from "@/lib/auth";
 
@@ -41,12 +42,14 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>
-          <Navbar initialUser={initialUser} />
-          {children}
-          <Footer />
-          <Toaster position="top-center" reverseOrder={false} />
-        </Providers>
+        <AuthProvider>
+          <Providers>
+            <Navbar initialUser={initialUser} />
+            {children}
+            <Footer />
+            <Toaster position="top-center" reverseOrder={false} />
+          </Providers>
+        </AuthProvider>
       </body>
     </html>
   );

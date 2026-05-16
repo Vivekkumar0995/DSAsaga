@@ -3,6 +3,8 @@ import dbconnect from "@/lib/mongodb";
 import UserModel from "@/models/user_model";
 import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from "cloudinary";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const hasCloudinaryConfig =
   !!process.env.CLOUDINARY_CLOUD_NAME &&
@@ -17,8 +19,14 @@ if (hasCloudinaryConfig) {
   });
 }
 
-const getUserIdFromToken = (req: NextRequest) => {
+const getUserIdFromToken = async (req: NextRequest) => {
   try {
+
+    const session = await getServerSession(authOptions);
+    if (session?.user && (session.user as any).id) {
+      return (session.user as any).id;
+    }
+
     const token = req.cookies.get("token")?.value;
     if (!token) return null;
 
@@ -71,7 +79,7 @@ const getCloudinaryPublicIdFromUrl = (imageUrl: string) => {
 export async function PUT(req: NextRequest) {
   try {
     await dbconnect();
-    const userId = getUserIdFromToken(req);
+    const userId = await getUserIdFromToken(req);
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -175,7 +183,7 @@ export async function PUT(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     await dbconnect();
-    const userId = getUserIdFromToken(req);
+    const userId = await getUserIdFromToken(req);
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
