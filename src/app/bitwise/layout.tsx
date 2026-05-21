@@ -1,14 +1,19 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import '../globals.css'
-import { TechniquesSidebar } from '@/components/searching-techniques/sidebar'
+
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: '--font-sans'
+})
 
 export const metadata: Metadata = {
-  title: 'Search Battle - Master Searching Techniques',
-  description: 'Learn, practice, and compete in structured searching challenges from beginner to advanced competitive programming level.',
+  title: 'Bitwise Master - Master Bitwise Algorithms',
+  description: 'Learn, practice, and compete in structured bit manipulation challenges from beginner to advanced competitive programming level.',
   generator: 'v0.app',
   icons: {
     icon: [
-      { 
+      {
         url: '/icon-light-32x32.png',
         media: '(prefers-color-scheme: light)',
       },
@@ -32,8 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <div className="min-h-screen bg-background">
-      <TechniquesSidebar />
-      <main className="pt-15">{children}</main>
+      <main>{children}</main>
     </div>
   )
 }
