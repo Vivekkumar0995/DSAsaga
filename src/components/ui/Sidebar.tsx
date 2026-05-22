@@ -4,20 +4,25 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, BookOpen, Swords, GraduationCap, Trophy } from 'lucide-react'
 
-import { useSession } from "next-auth/react"
+type AuthUser = {
+  userId?: string;
+} | null;
+
+type SidebarProps = {
+  initialUser: AuthUser;
+};
 
 const navItems = [
-  { href: '/',             icon: Home,           label: 'Home' },
-  { href: '/practice',    icon: BookOpen,       label: 'Practice' },
-  { href: '/battle',      icon: Swords,         label: 'Battle' },
-  { href: '/learn',       icon: GraduationCap,  label: 'Learn' },
-  { href: '/leaderboard', icon: Trophy,         label: 'Leaderboard' },
-  { href: '/profile',     icon: Home,           label: 'Profile' },
+  { href: '/', icon: Home, label: 'Home' },
+  { href: '/practice', icon: BookOpen, label: 'Practice' },
+  { href: '/battle', icon: Swords, label: 'Battle' },
+  { href: '/learn', icon: GraduationCap, label: 'Learn' },
+  { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  { href: '/profile', icon: Home, label: 'Profile' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ initialUser }: SidebarProps) {
   const pathname = usePathname()
-  const { data: session } = useSession()
   const allowedTopics = ['array-battle', 'string-battle', 'searching-techniques']
 
   // Only show the sidebar for supported topic pages
@@ -98,13 +103,13 @@ export default function Sidebar() {
       <div className="px-6 py-4 border-t border-[#E5E7EB]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-[#10B981] flex items-center justify-center text-white text-sm font-bold uppercase">
-            {session?.user?.name ? session.user.name.charAt(0) : 'U'}
+            {initialUser?.userId ? 'U' : 'G'}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#111827] truncate">
-              {session?.user?.name || 'User'}
+              {initialUser?.userId ? 'Signed in' : 'Guest'}
             </p>
-            <p className="text-xs text-[#6B7280]">Rating: 0</p>
+            <p className="text-xs text-[#6B7280]">{initialUser?.userId ? 'Account connected' : 'Not signed in'}</p>
           </div>
         </div>
       </div>
