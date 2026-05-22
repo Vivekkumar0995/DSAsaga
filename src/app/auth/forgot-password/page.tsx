@@ -2,7 +2,7 @@ import Bloom from '@/components/auth/Bloom'
 import React from 'react'
 import ForgotForm from '@/components/auth/ForgotForm'
 import { cookies } from "next/headers";
-import { decrypt } from "@/lib/auth";
+import { decrypt } from "@/lib/jose_auth";
 
 const ForgotPassword = async () => {
 

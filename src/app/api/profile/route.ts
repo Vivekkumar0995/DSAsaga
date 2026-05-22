@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbconnect from "@/lib/mongodb";
 import UserModel from "@/models/user_model";
-import jwt from "jsonwebtoken";
+import { decrypt } from "@/lib/jose_auth";
 import { v2 as cloudinary } from "cloudinary";
 
 const hasCloudinaryConfig =
@@ -17,12 +17,12 @@ if (hasCloudinaryConfig) {
   });
 }
 
-const getUserIdFromToken = (req: NextRequest) => {
+const getUserIdFromToken = async (req: NextRequest) => {
   try {
     const token = req.cookies.get("token")?.value;
     if (!token) return null;
 
-    const decoded = jwt.verify(token, process.env.SECRET!) as {
+    const decoded = await decrypt(token) as {
       userId: string;
     };
     return decoded.userId;

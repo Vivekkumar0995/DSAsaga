@@ -6,7 +6,8 @@ import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import {Providers} from "../components/heroUI/providers";
 import { Toaster } from 'react-hot-toast';
-import { decrypt } from "@/lib/auth";
+import { decrypt } from "@/lib/jose_auth";
+import Script from 'next/script'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,10 @@ export default async function RootLayout({
           <Footer />
           <Toaster position="top-center" reverseOrder={false} />
         </Providers>
+        <Script 
+          src="https://accounts.google.com/gsi/client"
+          strategy="beforeInteractive"
+        />
       </body>
     </html>
   );

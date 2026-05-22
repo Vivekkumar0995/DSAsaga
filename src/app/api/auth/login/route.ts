@@ -3,7 +3,7 @@ import dbconnect from "@/lib/mongodb";
 import sendOTP from "@/lib/sendOTP";
 import UserModel from "@/models/user_model";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { encrypt } from "@/lib/jose_auth";
 
 export async function POST(req :NextRequest){
   try{
@@ -11,7 +11,7 @@ export async function POST(req :NextRequest){
     const {email, password}  = await req.json();
 
     if(!email || !password){
-      return NextResponse.json({message:"email and password Required"},{status:400})
+      return NextResponse.json({message:"Email and Password required"},{status:400})
     }
 
     const user  = await UserModel.findOne({email})
@@ -29,20 +29,19 @@ export async function POST(req :NextRequest){
       );
       const result = await sendOTP(email, otp);
       if(!result.success) throw new Error(result.message);
-      const otpForWhat = jwt.sign( 
+      const otpForWhat = await encrypt( 
         {userId:user._id, otpForWhat: "verification"},
-        process.env.SECRET!,
-        {expiresIn:'5m'}
+        '5m'
       );
 
       const response = NextResponse.json(
         {message:"Verify your email first. " + result.message, next: "/auth/otp"},{status:403})
 
         response.cookies.set("otpForWhat", otpForWhat, {
-          httpOnly :true,
+          httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           maxAge:5*60,
-          sameSite: "strict",
+          sameSite: "lax",
           path:'/'
       });
       return response;
@@ -56,20 +55,19 @@ export async function POST(req :NextRequest){
     user.lastLoginAt = new Date();
     await user.save();
 
-    const token = jwt.sign( 
+    const token = await encrypt( 
       {userId:user._id},
-      process.env.SECRET!,
-      {expiresIn:'7d'}
+      '7d'
     );
 
     const response = NextResponse.json(
-      {message:"Logged in SucessFully", name:user.name},{status:201})
+      {message:"Logged in SuccessFully", name:user.name},{status:201})
 
       response.cookies.set("token", token, {
-        httpOnly :true,
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge:7*24*60*60,
-        sameSite: "strict",
+        sameSite: "lax",
         path:'/'
     });
 

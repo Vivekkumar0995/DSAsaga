@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
+import { decrypt } from "@/lib/jose_auth"
 
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -12,8 +12,7 @@ export async function proxy(request: NextRequest) {
     if (isAuthRoute) {
         if (token) {
             try {
-                const secret = new TextEncoder().encode(process.env.SECRET!);
-                await jwtVerify(token, secret);
+                await decrypt(token);
                 return NextResponse.redirect(new URL('/', request.url));
             } catch {
                 const response = NextResponse.next();
@@ -32,8 +31,7 @@ export async function proxy(request: NextRequest) {
         }
 
         try {
-            const secret = new TextEncoder().encode(process.env.SECRET!);
-            await jwtVerify(token, secret);
+            await decrypt(token);
             return NextResponse.next();
         } catch (error) {
             const loginUrl = new URL('/auth/login', request.url);

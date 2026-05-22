@@ -1,17 +1,16 @@
-import React from "react";
 import Bloom from '@/components/auth/Bloom'
 import OTPForm from "@/components/auth/OTPForm";
-import { decrypt } from "@/lib/auth";
+import { decrypt } from "@/lib/jose_auth";
 import { cookies } from "next/headers";
 
 const otp = async () => {
   const cookieStore = await cookies();
-    const otpForWhat = cookieStore.get("otpForWhat")?.value;
-    const forWhatPayload = otpForWhat ? await decrypt(otpForWhat) : null;
-    const forWhat =
-      forWhatPayload && typeof forWhatPayload === "object" && "otpForWhat" in forWhatPayload && forWhatPayload.userId
-        ? { forWhat: String(forWhatPayload.otpForWhat)}
-        : null;
+  const otpForWhat = cookieStore.get("otpForWhat")?.value;
+  const forWhatPayload = otpForWhat ? await decrypt(otpForWhat) : null;
+  const forWhat =
+    forWhatPayload && typeof forWhatPayload === "object" && "otpForWhat" in forWhatPayload && forWhatPayload.userId
+      ? { forWhat: String(forWhatPayload.otpForWhat)}
+      : null;
   
 
   return (

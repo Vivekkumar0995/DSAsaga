@@ -2,7 +2,7 @@ import dbconnect from "@/lib/mongodb";
 import sendOTP from "@/lib/sendOTP";
 import UserModel from "@/models/user_model";
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import { encrypt } from "@/lib/jose_auth";
 
 export async function POST(req:NextRequest){
   try{
@@ -28,20 +28,19 @@ export async function POST(req:NextRequest){
     const result = await sendOTP(email, otp);
     if(!result.success) throw new Error(result.message);
 
-    const otpForWhat = jwt.sign( 
+    const otpForWhat = await encrypt( 
       {userId:user._id, otpForWhat: forWhat},
-      process.env.SECRET!,
-      {expiresIn:'5m'}
+      '5m'
     );
 
     const response = NextResponse.json(
       { message: "Check your email for verification OTP" },{status:200})
 
       response.cookies.set("otpForWhat", otpForWhat, {
-        httpOnly :true,
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge:5*60,
-        sameSite: "strict",
+        sameSite: "lax",
         path:'/'
     });
     return response;

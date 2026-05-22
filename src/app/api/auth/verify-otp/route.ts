@@ -1,7 +1,7 @@
 import dbconnect from "@/lib/mongodb";
 import UserModel from "@/models/user_model";
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import { encrypt } from "@/lib/jose_auth";
 
 export async function POST(req:NextRequest){
   try{
@@ -19,20 +19,19 @@ export async function POST(req:NextRequest){
       user.verifyOtpExpireAt=0;
       await user.save();
 
-      const token = jwt.sign( 
+      const token = await encrypt( 
         {userId:user._id},
-        process.env.SECRET!,
-        {expiresIn:'7d'}
+        '7d'
       );
 
       const response = NextResponse.json(
         {message:"Account verified. Successfully signed up", name:user.name},{status:201})
 
         response.cookies.set("token", token, {
-          httpOnly :true,
+          httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           maxAge:7*24*60*60,
-          sameSite: "strict",
+          sameSite: "lax",
           path:'/'
       });
       return response;
@@ -45,19 +44,18 @@ export async function POST(req:NextRequest){
       user.resetOtpVerifiedTill = Date.now() + 5 * 60 * 1000;
       await user.save();
 
-      const reset = jwt.sign( 
+      const reset = await encrypt( 
         {userId:user._id},
-        process.env.SECRET!,
-        {expiresIn:'5m'}
+        '5m'
       );
       const response = NextResponse.json(
         {message:"Email verified. Input your new password.", name:user.name, next: "/auth/forgot-password"},{status:201})
 
         response.cookies.set("resetPassword", reset, {
-          httpOnly :true,
+          httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           maxAge:5*60,
-          sameSite: "strict",
+          sameSite: "lax",
           path:'/'
       });
       return response;
