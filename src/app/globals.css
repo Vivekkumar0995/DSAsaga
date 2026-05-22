@@ -112,39 +112,40 @@
 /* searching wala yaha se hai */
 
 :root {
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.15 0.02 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.02 260);
-  --primary: oklch(0.7 0.15 175);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0.005 260);
-  --secondary-foreground: oklch(0.15 0.02 260);
-  --muted: oklch(0.96 0.005 260);
-  --muted-foreground: oklch(0.5 0.01 260);
-  --accent: oklch(0.7 0.15 175);
-  --accent-foreground: oklch(1 0 0);
+  --background: #F8F9FA;
+  --foreground: #111827;
+  --card: #FFFFFF;
+  --card-foreground: #111827;
+  --popover: #FFFFFF;
+  --popover-foreground: #111827;
+  --primary: #10B981;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F3F4F6;
+  --secondary-foreground: #374151;
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+  --accent: #10B981;
+  --accent-foreground: #FFFFFF;
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.92 0.005 260);
-  --input: oklch(0.92 0.005 260);
-  --ring: oklch(0.7 0.15 175);
-  --chart-1: oklch(0.7 0.15 175);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #10B981;
   --radius: 0.75rem;
-  --sidebar: oklch(0.99 0 0);
-  --sidebar-foreground: oklch(0.15 0.02 260);
-  --sidebar-primary: oklch(0.7 0.15 175);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.96 0.01 175);
-  --sidebar-accent-foreground: oklch(0.15 0.02 260);
-  --sidebar-border: oklch(0.92 0.005 260);
-  --sidebar-ring: oklch(0.7 0.15 175);
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #10B981;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F3F4F6;
+  --sidebar-accent-foreground: #374151;
+  --sidebar-border: #E5E7EB;
+  --sidebar-ring: #10B981;
+  --sb-easy: #10B981;
+  --sb-easy-bg: #D1FAE5;
+  --sb-medium: #F59E0B;
+  --sb-medium-bg: #FEF3C7;
+  --sb-hard: #EF4444;
+  --sb-hard-bg: #FEE2E2;
 }
 
 .dark {

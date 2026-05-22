@@ -2,29 +2,29 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { BookOpen, Play, CheckCircle, ChevronRight } from "lucide-react"
+import { BookOpen, ChevronRight, CheckCircle } from "lucide-react"
 
 const tracks = [
   {
-    title: "Array Fundamentals",
+    title: "String Fundamentals",
     lessons: 12,
     completed: 8,
     difficulty: "Beginner",
-    color: "from-green-500 to-emerald-500",
+    color: "from-emerald-400 to-green-500",
   },
   {
     title: "Two Pointer Technique",
     lessons: 8,
     completed: 3,
     difficulty: "Intermediate",
-    color: "from-teal-500 to-cyan-500",
+    color: "from-teal-400 to-cyan-500",
   },
   {
     title: "Sliding Window",
     lessons: 10,
     completed: 0,
     difficulty: "Intermediate",
-    color: "from-blue-500 to-indigo-500",
+    color: "from-indigo-400 to-blue-500",
   },
 ]
 
@@ -43,7 +43,7 @@ export function LearningHubSection() {
               Learning <span className="text-[#14b8a6]">Hub</span>
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Structured paths to master every algorithm
+              Structured paths from basic manipulations to advanced pattern matching.
             </p>
           </motion.div>
         </div>
@@ -58,7 +58,7 @@ export function LearningHubSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
             >
-              <Link href="/array-battle/learn">
+              <Link href="/string-battle/learn">
                 <div className="bg-white shadow-sm hover:shadow-md border border-gray-200 rounded-2xl p-6 transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center`}>
@@ -99,15 +99,14 @@ export function LearningHubSection() {
 
         {/* CTA */}
         <div className="text-center">
-          <Link href="/array-battle/learn">
+          <Link href="/string-battle/learn">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl text-gray-900 font-semibold"
             >
-              <Play className="w-5 h-5 text-teal-600" />
+              <ChevronRight className="w-5 h-5 text-teal-600" />
               Explore All Tracks
-              <ChevronRight className="w-5 h-5" />
             </motion.button>
           </Link>
         </div>

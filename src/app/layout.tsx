@@ -8,7 +8,8 @@ import {Providers} from "../components/heroUI/providers";
 import AuthProvider from "@/components/AuthProvider";
 import { Toaster } from 'react-hot-toast';
 import { decrypt } from "@/lib/auth";
-
+import Sidebar from "@/components/ui/Sidebar";
+import ClientLayoutWrapper from "@/components/ui/ClientLayoutWrapper";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -39,18 +40,23 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>
-          <Providers>
-            <Navbar initialUser={initialUser} />
+       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+  <AuthProvider>
+    <Providers>
+      <div className="flex min-h-screen bg-[#F8F9FA]">
+        <Sidebar />
+        <ClientLayoutWrapper>
+          <Navbar initialUser={initialUser} />
+          <main className="flex-1">
             {children}
-            <Footer />
-            <Toaster position="top-center" reverseOrder={false} />
-          </Providers>
-        </AuthProvider>
-      </body>
+          </main>
+          <Footer />
+        </ClientLayoutWrapper>
+      </div>
+      <Toaster position="top-center" reverseOrder={false} />
+    </Providers>
+  </AuthProvider>
+</body>
     </html>
   );
 }

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import '../globals.css'
-import { TechniquesSidebar } from '@/components/searching-techniques/sidebar'
 
 export const metadata: Metadata = {
   title: 'Search Battle - Master Searching Techniques',
@@ -32,7 +31,6 @@ export default function RootLayout({
 }>) {
   return (
     <div className="min-h-screen bg-background">
-      <TechniquesSidebar />
       <main className="pt-15">{children}</main>
     </div>
   )

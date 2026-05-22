@@ -1,7 +1,3 @@
-import TopicSidebar from "@/components/array-battle/TopicSidebar"
-
-
-
 export default async function TopicLayout({
   children,
 }: Readonly<{
@@ -10,7 +6,6 @@ export default async function TopicLayout({
 
   return (
     <>
-        <TopicSidebar />
         {children}
     </>
   );
