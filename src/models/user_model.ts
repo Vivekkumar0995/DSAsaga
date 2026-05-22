@@ -11,6 +11,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     lowercase: true,
   },
+  googleSubID: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   password: {
     type: String,
     required: true,

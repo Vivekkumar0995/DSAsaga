@@ -1,8 +1,16 @@
 "use client"
+
+// Extend Window type for Google Identity Services
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+
 import Link from 'next/link'
 import { FiEye, FiEyeOff } from 'react-icons/fi'
-import { FcGoogle } from "react-icons/fc";
-import React, { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,6 +26,67 @@ const SignupForm = () => {
   const [cpassword, setcPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+
+
+  const handleGoogleCredential = async ({ credential }: { credential: string }) => {
+    const loadingToast = toast.loading("Signing up...");
+    try {
+      const response = await axios.post('/api/auth/google', { credential });
+      toast.success(response.data.message || "Successfully signed in!", { id: loadingToast });
+      router.push(next);
+      router.refresh();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "Signup failed";
+      toast.error(errorMessage, { id: loadingToast });
+      if (error.response?.data?.next) {
+        router.push(error.response.data.next + "?" + params.toString());
+        router.refresh();
+      }    
+    }
+  };
+
+  useEffect(() => {
+  if (!googleClientId) return;
+
+  const initGoogle = () => {
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      context: "signup",
+      callback: handleGoogleCredential, // JS callback instead of login_uri
+      ux_mode: "popup",
+      use_fedcm_for_prompt: false,
+      auto_prompt: false,
+    });
+
+    const btnEl = document.getElementById("g_id_signin");
+    if (btnEl) {
+      window.google.accounts.id.renderButton(btnEl, {
+        type: 'standard',
+        shape: 'pill',
+        theme: 'outline',
+        text: 'signup_with',
+        size: 'large',
+        logo_alignment: 'left',
+      });
+    }
+  };
+
+  if (window.google) {
+    initGoogle();
+  } else {
+    // Script not loaded yet, poll for it
+    const interval = setInterval(() => {
+      if (window.google) {
+        clearInterval(interval);
+        initGoogle();
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }
+}, [googleClientId]);
+
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -48,10 +117,16 @@ const SignupForm = () => {
 
         <h1 className='text-2xl font-bold text-black'>Create Account</h1>
 
-          <button type="submit" className='w-5/6 bg-white hover:bg-gray-100 text-black py-2 px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-400 hover:cursor-pointer flex items-center justify-center gap-3 border border-gray-300'>
-            <FcGoogle className='text-2xl shrink-0' />
-            Continue with Google
-          </button>
+          {/* <div id="g_id_onload"
+              data-client_id={googleClientId}
+              data-context="signup"
+              data-ux_mode="redirect"
+              data-login_uri={googleLoginUri}
+              data-nonce=""
+              data-auto_prompt="false">
+          </div> */}
+
+          <div id="g_id_signin"></div>
 
           <p className='text-gray-500' >OR</p>
 
