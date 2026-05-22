@@ -44,7 +44,7 @@ export default async function RootLayout({
        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
     <Providers>
       <div className="flex min-h-screen bg-[#F8F9FA]">
-        <Sidebar />
+        <Sidebar initialUser={initialUser} />
         <ClientLayoutWrapper>
           <Navbar initialUser={initialUser} />
           <main className="flex-1">
