@@ -8,6 +8,8 @@ import {Providers} from "../components/heroUI/providers";
 import { Toaster } from 'react-hot-toast';
 import { decrypt } from "@/lib/jose_auth";
 import Script from 'next/script'
+import Sidebar from "@/components/ui/Sidebar";
+import ClientLayoutWrapper from "@/components/ui/ClientLayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,20 +41,25 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Providers>
+       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <Providers>
+      <div className="flex min-h-screen bg-[#F8F9FA]">
+        <Sidebar />
+        <ClientLayoutWrapper>
           <Navbar initialUser={initialUser} />
-          {children}
+          <main className="flex-1">
+            {children}
+          </main>
           <Footer />
-          <Toaster position="top-center" reverseOrder={false} />
-        </Providers>
-        <Script 
+        </ClientLayoutWrapper>
+      </div>
+      <Toaster position="top-center" reverseOrder={false} />
+    </Providers>
+         <Script 
           src="https://accounts.google.com/gsi/client"
           strategy="beforeInteractive"
         />
-      </body>
+</body>
     </html>
   );
 }
