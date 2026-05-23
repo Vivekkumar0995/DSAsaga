@@ -5,6 +5,8 @@ import UserModel from "@/models/user_model";
 import { OAuth2Client } from "google-auth-library";
 import bcrypt from "bcryptjs";
 import { encrypt } from "@/lib/jose_auth";
+import LeaderboardModel from "@/models/leaderboard_model";
+import { redis } from "@/lib/redis";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const oauthClient = new OAuth2Client(CLIENT_ID);
@@ -69,6 +71,17 @@ export async function POST(req: Request) {
         profileImage: payload.picture || "",
         displayName: payload.name || "",
       } as any);
+
+
+      // Add new user to the redis leaderboard with 0 score
+      await LeaderboardModel.create({
+            userId: user._id,
+            score: 0,
+            problemsSolved: 0,
+            rank: "Beginner"
+          });
+      
+      await redis.zadd("leaderboard", { score: 0, member: user._id.toString() });
     }
     if (!user) user = emailUser;
     if (emailUser) {
@@ -106,8 +119,10 @@ export async function POST(req: Request) {
     user.lastLoginAt = new Date();
     await user.save();
 
+    const userId = user._id.toString();
+
     // Issue server JWT cookie (same as regular login)
-    const token = await encrypt({ userId: user._id }, "7d");
+    const token = await encrypt({ userId }, "7d");
     const response = NextResponse.json(
       {message:"Google login successful", name:user.name},{status:201})
 

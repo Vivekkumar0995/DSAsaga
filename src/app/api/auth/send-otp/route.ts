@@ -28,8 +28,10 @@ export async function POST(req:NextRequest){
     const result = await sendOTP(email, otp);
     if(!result.success) throw new Error(result.message);
 
+    const userId = user._id.toString();
+
     const otpForWhat = await encrypt( 
-      {userId:user._id, otpForWhat: forWhat},
+      {userId, otpForWhat: forWhat},
       '5m'
     );
 

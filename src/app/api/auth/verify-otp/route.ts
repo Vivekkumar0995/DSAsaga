@@ -19,8 +19,10 @@ export async function POST(req:NextRequest){
       user.verifyOtpExpireAt=0;
       await user.save();
 
+      const userId = user._id.toString();
+
       const token = await encrypt( 
-        {userId:user._id},
+        {userId},
         '7d'
       );
 
@@ -44,8 +46,10 @@ export async function POST(req:NextRequest){
       user.resetOtpVerifiedTill = Date.now() + 5 * 60 * 1000;
       await user.save();
 
+      const userId = user._id.toString();
+
       const reset = await encrypt( 
-        {userId:user._id},
+        {userId},
         '5m'
       );
       const response = NextResponse.json(

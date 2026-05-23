@@ -23,9 +23,28 @@ const getUserIdFromToken = async (req: NextRequest) => {
     if (!token) return null;
 
     const decoded = await decrypt(token) as {
-      userId: string;
+      userId: unknown;
     };
-    return decoded.userId;
+    if (typeof decoded.userId === "string") {
+      return decoded.userId;
+    }
+
+    if (decoded.userId && typeof decoded.userId === "object") {
+      const userIdObject = decoded.userId as {
+        toHexString?: () => string;
+        buffer?: ArrayLike<number>;
+      };
+
+      if (typeof userIdObject.toHexString === "function") {
+        return userIdObject.toHexString();
+      }
+
+      if (userIdObject.buffer) {
+        return Buffer.from(Array.from(userIdObject.buffer)).toString("hex");
+      }
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -71,7 +90,7 @@ const getCloudinaryPublicIdFromUrl = (imageUrl: string) => {
 export async function PUT(req: NextRequest) {
   try {
     await dbconnect();
-    const userId = getUserIdFromToken(req);
+    const userId = await getUserIdFromToken(req);
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -175,7 +194,7 @@ export async function PUT(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     await dbconnect();
-    const userId = getUserIdFromToken(req);
+    const userId = await getUserIdFromToken(req);
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }

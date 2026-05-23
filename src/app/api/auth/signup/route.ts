@@ -35,7 +35,7 @@ export async function POST(req : NextRequest){
     // Add new user to the redis leaderboard with 0 score
     await redis.zadd("leaderboard", { score: 0, member: user._id.toString() });
 
-  return NextResponse.json({message:"Account created!!" , userId :user._id},{status:201})
+  return NextResponse.json({message:"Account created!!" , userId :user._id.toString()},{status:201})
  }
  catch (error: unknown) {
     if (error instanceof Error) {

@@ -55,8 +55,10 @@ export async function POST(req :NextRequest){
     user.lastLoginAt = new Date();
     await user.save();
 
+    const userId = user._id.toString();
+
     const token = await encrypt( 
-      {userId:user._id},
+      {userId},
       '7d'
     );
 
