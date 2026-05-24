@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             problemsSolved: 0,
             rank: "Beginner"
           });
-      
+
       await redis.zadd("leaderboard", { score: 0, member: user._id.toString() });
     }
     if (!user) user = emailUser;
@@ -97,13 +97,13 @@ export async function POST(req: Request) {
         );
         const result = await sendOTP(email, otp);
         if(!result.success) throw new Error(result.message);
-        const otpForWhat = await encrypt( 
+        const otpForWhat = await encrypt(
           {userId:user._id, otpForWhat: "verification"},
           '5m'
         );
 
         const response = NextResponse.json(
-          {message:"Verify your email first. " + result.message, next: "/auth/otp"},{status:403})
+          {message:"Verify your email first. " + result.message, next: "/otp"},{status:403})
 
           response.cookies.set("otpForWhat", otpForWhat, {
             httpOnly: true,

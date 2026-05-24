@@ -4,11 +4,11 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
-import {Providers} from "../components/heroUI/providers";
+import {Providers} from "@/components/heroUI/providers";
 import { Toaster } from 'react-hot-toast';
 import { decrypt } from "@/lib/jose_auth";
 import Script from 'next/script'
-import Sidebar from "@/components/ui/Sidebar";
+import AppSidebar from "@/components/ui/AppSidebar";
 import ClientLayoutWrapper from "@/components/ui/ClientLayoutWrapper";
 
 const geistSans = Geist({
@@ -44,7 +44,7 @@ export default async function RootLayout({
        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
     <Providers>
       <div className="flex min-h-screen bg-[#F8F9FA]">
-        <Sidebar initialUser={initialUser} />
+        <AppSidebar initialUser={initialUser} />
         <ClientLayoutWrapper>
           <Navbar initialUser={initialUser} />
           <main className="flex-1">
@@ -55,7 +55,7 @@ export default async function RootLayout({
       </div>
       <Toaster position="top-center" reverseOrder={false} />
     </Providers>
-         <Script 
+         <Script
           src="https://accounts.google.com/gsi/client"
           strategy="beforeInteractive"
         />

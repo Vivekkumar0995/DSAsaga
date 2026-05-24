@@ -51,11 +51,11 @@ const Navbar = ({ initialUser }: NavbarProps) => {
             <Link href="/" className="text-lg">
               Home
             </Link>
-            <Link href="/profile" className="text-lg">
+            <Link href="/main/profile" className="text-lg">
                Profile
             </Link>
-            {!user && pathname !== "/auth/login" && (
-              <Link href="/auth/login" className="text-lg">
+            {!user && pathname !== "/login" && (
+              <Link href="/login" className="text-lg">
                 Login
               </Link>
             )}

@@ -10,10 +10,12 @@ declare global {
 
 import Link from 'next/link'
 import { FiEye, FiEyeOff } from 'react-icons/fi'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+let isGoogleInitialized = false;
 
 const LoginForm = () => {
   const router = useRouter();
@@ -38,7 +40,7 @@ const LoginForm = () => {
       if (error.response?.data?.next) {
         router.push(error.response.data.next + "?" + params.toString());
         router.refresh();
-      }    
+      }
     }
   };
 
@@ -46,6 +48,9 @@ const LoginForm = () => {
     if (!googleClientId) return;
 
     const initGoogle = () => {
+      if (isGoogleInitialized) return;
+      isGoogleInitialized = true;
+
       window.google.accounts.id.initialize({
         client_id: googleClientId,
         callback: handleGoogleCredential, // JS callback instead of login_uri
@@ -56,7 +61,7 @@ const LoginForm = () => {
       });
 
       const btnEl = document.getElementById("g_id_signin");
-      if (btnEl) {
+      if (btnEl && !btnEl.hasChildNodes()) {
         window.google.accounts.id.renderButton(btnEl, {
           type: 'standard',
           shape: 'pill',
@@ -131,7 +136,7 @@ const LoginForm = () => {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          
+
           <div className='relative w-5/6'>
             <input
               id="password"
@@ -153,7 +158,7 @@ const LoginForm = () => {
             </button>
           </div>
 
-          <Link href={`/auth/forgot-password?${params.toString()}`} className='text-blue-500 hover:underline flex self-end mr-10 text-xs'>
+          <Link href={`/forgot-password?${params.toString()}`} className='text-blue-500 hover:underline flex self-end mr-10 text-xs'>
             Forgot Password?
           </Link>
 
@@ -161,7 +166,7 @@ const LoginForm = () => {
             Continue
           </button>
           <p className='text-black text-sm'>
-            Don't have an account? <Link href={`/auth/signup?${params.toString()}`} className='text-blue-500 hover:underline'>Sign up</Link>
+            Don't have an account? <Link href={`/signup?${params.toString()}`} className='text-blue-500 hover:underline'>Sign up</Link>
           </p>
         </form>
     </div>
