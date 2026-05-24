@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import { Clock, ArrowRight } from "lucide-react"
 import { battleModes } from "@/lib/data"
 import { fadeInUp, staggerContainer, smoothTransition } from "@/lib/motion"

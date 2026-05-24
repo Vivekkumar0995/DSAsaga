@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 const platformLinks = [
-	{ href: "/leaderboard", label: "Leaderboard" },
-	{ href: "/profile", label: "Profile" },
+	{ href: "/main/leaderboard", label: "Leaderboard" },
+	{ href: "/main/profile", label: "Profile" },
 	{ href: "/auth/signup", label: "Join Challenges" },
 ];
 

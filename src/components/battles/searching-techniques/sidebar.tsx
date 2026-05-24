@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BookOpen, Dumbbell, LayoutGrid, Menu, Swords, Trophy, X } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 
 const navItems = [

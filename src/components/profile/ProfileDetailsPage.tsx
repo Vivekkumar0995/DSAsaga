@@ -141,7 +141,7 @@ const ProfileDetailsPage = () => {
       await axios.put("/api/profile", updatableData);
 
       toast.success("Profile updated successfully!", { id: loadingToast });
-      router.push("/profile");
+      router.push("/main/profile");
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
