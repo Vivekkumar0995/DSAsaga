@@ -7,8 +7,11 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   const pathname = usePathname();
 
   const allowedTopics = ['array-battle', 'string-battle', 'searching-techniques'];
+  const pathParts = pathname.split('/').filter(Boolean);
+  const topicIndex = pathParts[0] === 'battles' ? 1 : 0;
+  const currentTopic = pathParts[topicIndex] || '';
   const isSidebarVisible = allowedTopics.some(
-    topic => pathname === `/${topic}` || pathname.startsWith(`/${topic}/`)
+    topic => currentTopic === topic && (pathParts[0] === 'battles' || pathParts[0] !== 'battles')
   );
 
   return (

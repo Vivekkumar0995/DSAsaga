@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { BitwiseMenu } from "@/components/battles/bitwise/BitwiseMenu"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Trophy,

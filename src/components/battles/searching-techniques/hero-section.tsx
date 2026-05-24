@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { ArrowRight, Play, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import { fadeInUp, staggerContainer, smoothTransition } from "@/lib/motion"
 
 export function HeroSection() {

@@ -17,22 +17,25 @@ const navItems = [
   { href: '/practice', icon: BookOpen, label: 'Practice' },
   { href: '/battle', icon: Swords, label: 'Battle' },
   { href: '/learn', icon: GraduationCap, label: 'Learn' },
-  { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-  { href: '/profile', icon: Home, label: 'Profile' },
+  { href: '/main/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  { href: '/main/profile', icon: Home, label: 'Profile' },
 ]
 
 export default function Sidebar({ initialUser }: SidebarProps) {
   const pathname = usePathname()
   const allowedTopics = ['array-battle', 'string-battle', 'searching-techniques']
+  const pathParts = pathname.split('/').filter(Boolean)
+  const topicIndex = pathParts[0] === 'battles' ? 1 : 0
+  const currentTopic = pathParts[topicIndex] || ''
+  const isBattlesRoute = pathParts[0] === 'battles' && allowedTopics.includes(currentTopic)
+  const isRootTopicRoute = allowedTopics.includes(currentTopic) && pathParts[0] !== 'battles'
 
   // Only show the sidebar for supported topic pages
-  if (!allowedTopics.some(topic => pathname === `/${topic}` || pathname.startsWith(`/${topic}/`))) {
+  if (!isBattlesRoute && !isRootTopicRoute) {
     return null;
   }
 
-  // Extract the first segment of the path (e.g., 'array-battle', 'string-battle')
-  const pathParts = pathname.split('/').filter(Boolean);
-  const currentTopic = pathParts.length > 0 ? pathParts[0] : '';
+  const topicBasePath = isBattlesRoute ? `/battles/${currentTopic}` : `/${currentTopic}`
   const topicName = currentTopic ? currentTopic.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : '';
 
   // Update nav links based on the current topic if we are inside one
@@ -41,17 +44,17 @@ export default function Sidebar({ initialUser }: SidebarProps) {
         if (item.href === '/') {
           return {
             ...item,
-            href: `/${currentTopic}`
+            href: topicBasePath
           }
         }
 
-        if (item.href === '/profile' || item.href === '/leaderboard') {
+        if (item.href === '/main/profile' || item.href === '/main/leaderboard') {
           return item
         }
 
         return {
           ...item,
-          href: `/${currentTopic}${item.href}`
+          href: `${topicBasePath}${item.href}`
         }
       })
     : navItems;

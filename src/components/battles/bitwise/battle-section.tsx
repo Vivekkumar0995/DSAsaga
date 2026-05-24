@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import { Zap, Trophy, Users, Clock, ArrowRight } from "lucide-react"
 import Link from "next/link"
 

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Clock, ArrowRight } from "lucide-react"
 import { searchTechniques } from "@/lib/data"
