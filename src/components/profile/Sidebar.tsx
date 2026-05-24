@@ -15,7 +15,7 @@ const Sidebar: React.FC = () => {
   const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       const loadingToast = toast.loading("Logging out...");
-  
+
       try {
         const response = await axios.post("/api/auth/logout");
         toast.success(response.data.message || "Logged out!", { id: loadingToast });
@@ -31,9 +31,9 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="sticky top-28 ml-4 h-[calc(100vh-8rem)] w-70 overflow-hidden bg-white/20 backdrop-blur-xs border border-white/40 flex flex-col p-6 rounded-2xl shadow-[0_12px_36px_rgba(15,23,42,0.18)]">
-      
+
       <div className="min-h-0 flex-1 w-full overflow-y-auto scrollbar-hide">
-        
+
         <div className="mb-6">
           <p className="text-xs text-gray-400 mb-3 tracking-widest">PLAY</p>
 
@@ -41,7 +41,7 @@ const Sidebar: React.FC = () => {
             <SidebarItem href="/daily-target" icon={<FiTarget />} label="Daily Target" pathname={pathname} />
             <SidebarItem href="/battles" icon={<FiBarChart2 />} label="Battles" pathname={pathname} />
             <SidebarItem href="/versus" icon={<FiUsers />} label="Versus" pathname={pathname} />
-            <SidebarItem href="/leaderboard" icon={<FiAward />} label="Leaderboard" pathname={pathname} />
+            <SidebarItem href="/main/leaderboard" icon={<FiAward />} label="Leaderboard" pathname={pathname} />
             <SidebarItem href="/learn-dsa" icon={<FiBookOpen />} label="Learn DSA" pathname={pathname} />
           </div>
         </div>
@@ -50,7 +50,7 @@ const Sidebar: React.FC = () => {
           <p className="text-xs text-gray-400 mb-3 tracking-widest">YOU</p>
 
           <div className="space-y-2">
-            <SidebarItem href="/profile" icon={<FiUser />} label="Profile" pathname={pathname} isProfile />
+            <SidebarItem href="/main/profile" icon={<FiUser />} label="Profile" pathname={pathname} isProfile />
             <SidebarItem href="/stats" icon={<FiBarChart2 />} label="Stats" pathname={pathname} />
             <SidebarItem href="/settings" icon={<FiSettings />} label="Settings" pathname={pathname} />
           </div>

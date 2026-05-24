@@ -29,13 +29,13 @@ export async function POST(req :NextRequest){
       );
       const result = await sendOTP(email, otp);
       if(!result.success) throw new Error(result.message);
-      const otpForWhat = await encrypt( 
+      const otpForWhat = await encrypt(
         {userId:user._id, otpForWhat: "verification"},
         '5m'
       );
 
       const response = NextResponse.json(
-        {message:"Verify your email first. " + result.message, next: "/auth/otp"},{status:403})
+        {message:"Verify your email first. " + result.message, next: "/otp"},{status:403})
 
         response.cookies.set("otpForWhat", otpForWhat, {
           httpOnly: true,
@@ -50,14 +50,14 @@ export async function POST(req :NextRequest){
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if(!isPasswordMatch){
       return NextResponse.json({message:"Wrong password"},{status:400})
-    } 
+    }
 
     user.lastLoginAt = new Date();
     await user.save();
 
     const userId = user._id.toString();
 
-    const token = await encrypt( 
+    const token = await encrypt(
       {userId},
       '7d'
     );

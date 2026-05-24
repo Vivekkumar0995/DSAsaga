@@ -21,7 +21,7 @@ export async function POST(req:NextRequest){
 
       const userId = user._id.toString();
 
-      const token = await encrypt( 
+      const token = await encrypt(
         {userId},
         '7d'
       );
@@ -48,12 +48,12 @@ export async function POST(req:NextRequest){
 
       const userId = user._id.toString();
 
-      const reset = await encrypt( 
+      const reset = await encrypt(
         {userId},
         '5m'
       );
       const response = NextResponse.json(
-        {message:"Email verified. Input your new password.", name:user.name, next: "/auth/forgot-password"},{status:201})
+        {message:"Email verified. Input your new password.", name:user.name, next: "/forgot-password"},{status:201})
 
         response.cookies.set("resetPassword", reset, {
           httpOnly: true,
@@ -72,7 +72,7 @@ export async function POST(req:NextRequest){
       user.verifyOtpExpireAt=0;
       await user.save();
 
-      return NextResponse.json({message:"Email verified. Now you can login.", name:user.name, next: "/auth/login"},{status:201});
+      return NextResponse.json({message:"Email verified. Now you can login.", name:user.name, next: "/login"},{status:201});
     }
     else return NextResponse.json({message:"No case matched, got " + forWhat, name:user.name},{status:400});
   } catch(error:unknown){

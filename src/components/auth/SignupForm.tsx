@@ -10,10 +10,12 @@ declare global {
 
 import Link from 'next/link'
 import { FiEye, FiEyeOff } from 'react-icons/fi'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+let isGoogleInitialized = false;
 
 const SignupForm = () => {
   const router = useRouter();
@@ -28,8 +30,6 @@ const SignupForm = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-
-
   const handleGoogleCredential = async ({ credential }: { credential: string }) => {
     const loadingToast = toast.loading("Signing up...");
     try {
@@ -43,7 +43,7 @@ const SignupForm = () => {
       if (error.response?.data?.next) {
         router.push(error.response.data.next + "?" + params.toString());
         router.refresh();
-      }    
+      }
     }
   };
 
@@ -51,6 +51,9 @@ const SignupForm = () => {
   if (!googleClientId) return;
 
   const initGoogle = () => {
+    if (isGoogleInitialized) return;
+    isGoogleInitialized = true;
+
     window.google.accounts.id.initialize({
       client_id: googleClientId,
       context: "signup",
@@ -61,7 +64,7 @@ const SignupForm = () => {
     });
 
     const btnEl = document.getElementById("g_id_signin");
-    if (btnEl) {
+    if (btnEl && !btnEl.hasChildNodes()) {
       window.google.accounts.id.renderButton(btnEl, {
         type: 'standard',
         shape: 'pill',
@@ -103,7 +106,7 @@ const SignupForm = () => {
       const otp = await axios.post('/api/auth/send-otp', {email: email, forWhat: "verify-and-signup"});
       localStorage.setItem('email', email);
       toast.success(otp.data.message || "Check your email for OTP");
-      router.push(`/auth/otp?${params.toString()}`);
+      router.push(`/otp?${params.toString()}`);
       router.refresh();
     } catch(error: any){
       const errorMessage = error.response?.data?.message || "Signup failed";
@@ -197,7 +200,7 @@ const SignupForm = () => {
             Continue
           </button>
           <p className='text-black text-sm'>
-            Already have an account? <Link href={`/auth/login?${params.toString()}`} className='text-blue-500 hover:underline'>Log in</Link>
+            Already have an account? <Link href={`/login?${params.toString()}`} className='text-blue-500 hover:underline'>Log in</Link>
           </p>
         </form>
     </div>

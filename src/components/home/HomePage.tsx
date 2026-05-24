@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import Link from "next/link";
-import Button from "@/components/ui/Button";
+import GradientButton from "@/components/ui/GradientButton";
 import CodeAnimation from "./CodeAnimation";
 
 const HomePage = () => {
@@ -65,7 +65,7 @@ const HomePage = () => {
 
           <div className="flex gap-4 items-center">
             <Link href="/play">
-              <Button label="Get Started" />
+              <GradientButton label="Get Started" />
             </Link>
             <Link href="" className="text-sm underline text-black">
               Learn More

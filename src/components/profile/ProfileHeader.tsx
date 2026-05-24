@@ -183,19 +183,19 @@ const ProfileHeader = () => {
 
             <div className="flex flex-wrap gap-3 mt-1 md:mt-0">
               <Link
-                href="/profile/EditProfile"
+                href="/main/profile/EditProfile"
                 className="rounded-full bg-gray-200 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-300"
               >
                 Edit Profile
               </Link>
               <Link
-                href="/settings"
+                href="/"
                 className="rounded-full bg-gray-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-black"
               >
                 + Connect
               </Link>
               <Link
-                href="/settings"
+                href="/"
                 className="flex items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
               >
                 <FiSettings /> Settings

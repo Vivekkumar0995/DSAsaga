@@ -40,7 +40,7 @@ const ForgotForm = ({resetUser} : ResetProps ) => {
       const response = await axios.post("/api/auth/send-otp", {email: email, forWhat: "reset"});
       toast.success(response.data.message || "Check your email for OTP", { id: loadingToast });
       localStorage.setItem("email", email);
-      router.push(`/auth/otp?${params.toString()}`)
+      router.push(`/otp?${params.toString()}`)
       router.refresh();
     }
     catch(error : any){
@@ -65,7 +65,7 @@ const ForgotForm = ({resetUser} : ResetProps ) => {
     try{
       const response = await axios.post("/api/auth/reset-password", {email: email, password: password});
       toast.success(response.data.message || "Password reset successful.", {id: loadingToast});
-      router.push(`/auth/login?${params.toString()}`);
+      router.push(`/login?${params.toString()}`);
       router.refresh();
     }
     catch(error: any){
@@ -91,7 +91,7 @@ const ForgotForm = ({resetUser} : ResetProps ) => {
             className='h-10 w-5/6 rounded-xl border border-gray-300 bg-white px-4 text-black focus:outline-none focus:ring-2 focus:ring-gray-400'
             onChange = {(e) => setEmail(e.target.value)}
           />
-        
+
 
           { !user &&
             (<button type="submit" className='w-5/6 bg-black hover:bg-black text-white py-2 px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-400 hover:cursor-pointer' onClick={handleEmailSubmit}>
@@ -99,7 +99,7 @@ const ForgotForm = ({resetUser} : ResetProps ) => {
             </button>)
           }
 
-          { user && 
+          { user &&
           (<>
           <div className='relative w-5/6'>
             <input

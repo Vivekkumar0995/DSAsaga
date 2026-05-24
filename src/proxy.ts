@@ -6,8 +6,8 @@ export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const token = request.cookies.get('token')?.value;
 
-    const isAuthRoute = pathname.startsWith('/auth');
-    const isProtectedRoute = pathname.startsWith('/profile') || pathname.startsWith('/dashboard');
+    const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password') || pathname.startsWith('/otp');
+    const isProtectedRoute = pathname.startsWith('/main/profile') || pathname.startsWith('/dashboard');
 
     if (isAuthRoute) {
         if (token) {
@@ -25,7 +25,7 @@ export async function proxy(request: NextRequest) {
 
     if (isProtectedRoute) {
         if (!token) {
-            const loginUrl = new URL('/auth/login', request.url);
+            const loginUrl = new URL('/login', request.url);
             loginUrl.searchParams.set('next', pathname);
             return NextResponse.redirect(loginUrl);
         }
@@ -34,7 +34,7 @@ export async function proxy(request: NextRequest) {
             await decrypt(token);
             return NextResponse.next();
         } catch (error) {
-            const loginUrl = new URL('/auth/login', request.url);
+            const loginUrl = new URL('/login', request.url);
             loginUrl.searchParams.set('next', pathname);
             const response = NextResponse.redirect(loginUrl);
             response.cookies.delete('token');
