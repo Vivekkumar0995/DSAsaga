@@ -48,17 +48,17 @@ const LoginForm = () => {
     if (!googleClientId) return;
 
     const initGoogle = () => {
-      if (isGoogleInitialized) return;
-      isGoogleInitialized = true;
-
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: handleGoogleCredential, // JS callback instead of login_uri
-        ux_mode: "popup",
-        context: "signin",
-        use_fedcm_for_prompt: false,
-        auto_prompt: false,
-      });
+      if (!isGoogleInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleCredential, // JS callback instead of login_uri
+          ux_mode: "popup",
+          context: "signin",
+          use_fedcm_for_prompt: false,
+          auto_prompt: false,
+        });
+        isGoogleInitialized = true;
+      }
 
       const btnEl = document.getElementById("g_id_signin");
       if (btnEl && !btnEl.hasChildNodes()) {
