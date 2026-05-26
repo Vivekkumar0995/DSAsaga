@@ -29,7 +29,6 @@ const ForgotForm = ({resetUser} : ResetProps ) => {
   const [user, setUser] = React.useState<ResetUser>(resetUser);
 
   React.useEffect(() => {
-    setEmail(localStorage.getItem("email") || "");
     setUser(resetUser);
   }, [resetUser]);
 
@@ -39,7 +38,6 @@ const ForgotForm = ({resetUser} : ResetProps ) => {
     try{
       const response = await axios.post("/api/auth/send-otp", {email: email, forWhat: "reset"});
       toast.success(response.data.message || "Check your email for OTP", { id: loadingToast });
-      localStorage.setItem("email", email);
       router.push(`/otp?${params.toString()}`)
       router.refresh();
     }
@@ -63,7 +61,7 @@ const ForgotForm = ({resetUser} : ResetProps ) => {
     }
     const loadingToast = toast.loading("Updating your password...");
     try{
-      const response = await axios.post("/api/auth/reset-password", {email: email, password: password});
+      const response = await axios.post("/api/auth/reset-password", { password: password });
       toast.success(response.data.message || "Password reset successful.", {id: loadingToast});
       router.push(`/login?${params.toString()}`);
       router.refresh();
