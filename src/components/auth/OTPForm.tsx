@@ -23,10 +23,10 @@ export default function OTPForm({forWhat}: OTPProps) {
 
   async function handleSubmit (event: any){
     event.preventDefault();
-    const email = localStorage.getItem('email');
     const verifyingToast = toast.loading("Verifying...");
     try {
-      const response = await axios.post('/api/auth/verify-otp', {otp: otp, email: email, forWhat: forWhat?.forWhat});
+      // Case 2 Fix: Only send otp — server reads email & forWhat from encrypted cookie
+      const response = await axios.post('/api/auth/verify-otp', { otp });
       toast.success(response.data.message || "OTP verified!!", { id: verifyingToast });
       if(response.data?.next) router.push(response.data.next + "?" + params.toString());
       else router.push(next);
@@ -39,11 +39,11 @@ export default function OTPForm({forWhat}: OTPProps) {
 
   async function handleResend (event: any){
     event.preventDefault();
-    const email = localStorage.getItem('email');
     const sendingToast = toast.loading("Sending...");
     try {
-      const otp = await axios.post('/api/auth/send-otp', {email: email, forWhat: forWhat});
-      toast.success(otp.data.message || "OTP resent! Check your email", {id: sendingToast});
+      // Case 2 Fix: No email or forWhat needed — server reads both from encrypted cookie
+      const res = await axios.post('/api/auth/send-otp', {});
+      toast.success(res.data.message || "OTP resent! Check your email", {id: sendingToast});
       router.refresh();
     } catch(error: any) {
       const errorMessage = error.response?.data?.message || "Failed to send OTP";

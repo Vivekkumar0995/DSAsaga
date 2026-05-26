@@ -4,33 +4,52 @@ import sendOTP from "@/lib/sendOTP";
 import UserModel from "@/models/user_model";
 import bcrypt from "bcryptjs";
 import { encrypt } from "@/lib/jose_auth";
+import { redis } from "@/lib/redis";
+import crypto from "crypto";
+import { rateLimit, getClientIP } from "@/lib/rateLimit";
 
 export async function POST(req :NextRequest){
   try{
     await dbconnect();
+
+    // 1. IP-based Rate Limiting for login attempts
+    const ip = getClientIP(req);
+    const ipLimit = await rateLimit({
+      key: `rl:login:ip:${ip}`,
+      limit: 10,
+      windowSeconds: 900, // 10 attempts per 15 minutes per IP
+    });
+    if (ipLimit) return ipLimit;
+
     const {email, password}  = await req.json();
 
     if(!email || !password){
       return NextResponse.json({message:"Email and Password required"},{status:400})
     }
 
-    const user  = await UserModel.findOne({email})
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 2. Email-based Rate Limiting for login attempts
+    const emailLimit = await rateLimit({
+      key: `rl:login:email:${normalizedEmail}`,
+      limit: 5,
+      windowSeconds: 900, // 5 attempts per 15 minutes per Email
+    });
+    if (emailLimit) return emailLimit;
+
+    const user  = await UserModel.findOne({email: normalizedEmail})
     if(!user){
       return NextResponse.json({message:"Invalid Credentials"},{status:400})
     }
 
     if(!user.isAccountVerified){
-      const otp = Math.floor(Math.random() * 900000 + 100000).toString();
-      const expiry = Date.now() + 5 * 60 * 1000;
-      await UserModel.findOneAndUpdate(
-        { email },
-        { verifyOtp: otp, verifyOtpExpireAt: expiry },
-        { new: true }
-      );
-      const result = await sendOTP(email, otp);
+      const otp = crypto.randomInt(100000, 999999).toString(); // Case 3 Fix
+      // Case 4 Fix: Store OTP in Redis instead of MongoDB
+      await redis.set(`otp:${normalizedEmail}:verification`, otp, { ex: 300 });
+      const result = await sendOTP(normalizedEmail, otp);
       if(!result.success) throw new Error(result.message);
       const otpForWhat = await encrypt(
-        {userId:user._id, otpForWhat: "verification"},
+        {userId:user._id.toString(), email: normalizedEmail, otpForWhat: "verification"},
         '5m'
       );
 

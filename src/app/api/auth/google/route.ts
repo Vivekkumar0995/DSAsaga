@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbconnect from "@/lib/mongodb";
 import sendOTP from "@/lib/sendOTP";
 import UserModel from "@/models/user_model";
@@ -7,6 +7,8 @@ import bcrypt from "bcryptjs";
 import { encrypt } from "@/lib/jose_auth";
 import LeaderboardModel from "@/models/leaderboard_model";
 import { redis } from "@/lib/redis";
+import crypto from "crypto";
+import { rateLimit, getClientIP } from "@/lib/rateLimit";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const oauthClient = new OAuth2Client(CLIENT_ID);
@@ -31,8 +33,17 @@ async function extractCredentialFromRequest(req: Request): Promise<{ credential:
   return { credential: url.searchParams.get("credential"), next: nextParam };
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    // 1. IP-based Rate Limiting for Google Login
+    const ip = getClientIP(req);
+    const ipLimit = await rateLimit({
+      key: `rl:google-login:ip:${ip}`,
+      limit: 10,
+      windowSeconds: 900, // 10 attempts per 15 minutes per IP
+    });
+    if (ipLimit) return ipLimit;
+
     const { credential, next } = await extractCredentialFromRequest(req);
     if (!credential) {
       return NextResponse.json({ message: "No credential provided" }, { status: 400 });
@@ -54,13 +65,13 @@ export async function POST(req: Request) {
 
     // Connect DB and find or create user
     await dbconnect();
-    const email = payload.email;
+    const email = payload.email.toLowerCase().trim();
     const googleSubID = payload.sub;
     let user = await UserModel.findOne({ googleSubID });
-    let emailUser = await UserModel.findOne({ email });
+     const emailUser = await UserModel.findOne({ email });
     if (!user && !emailUser) {
       // create a user with a random password (required by schema)
-      const randomPassword = Math.random().toString(36).slice(-12);
+      const randomPassword = crypto.randomBytes(16).toString("hex");
       const hashed = await bcrypt.hash(randomPassword, 10);
       user = await UserModel.create({
         name: payload.name || "",
@@ -88,17 +99,12 @@ export async function POST(req: Request) {
       if (payload.hd || payload.email.includes("@gmail.com")) user.isAccountVerified = true;
       user.googleSubID = googleSubID;
       if (!user.isAccountVerified){
-        const otp = Math.floor(Math.random() * 900000 + 100000).toString();
-        const expiry = Date.now() + 5 * 60 * 1000;
-        await UserModel.findOneAndUpdate(
-          { email },
-          { verifyOtp: otp, verifyOtpExpireAt: expiry },
-          { new: true }
-        );
+        const otp = crypto.randomInt(100000, 999999).toString();
+        await redis.set(`otp:${email}:verification`, otp, { ex: 300 });
         const result = await sendOTP(email, otp);
         if(!result.success) throw new Error(result.message);
         const otpForWhat = await encrypt(
-          {userId:user._id, otpForWhat: "verification"},
+          {userId:user._id.toString(), email, otpForWhat: "verification"},
           '5m'
         );
 
@@ -143,7 +149,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   // Support GET in case Google redirects with query params
   return POST(req);
 }

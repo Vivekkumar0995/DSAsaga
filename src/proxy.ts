@@ -16,7 +16,7 @@ export async function proxy(request: NextRequest) {
                 return NextResponse.redirect(new URL('/', request.url));
             } catch {
                 const response = NextResponse.next();
-                response.cookies.delete('token');
+                response.cookies.set('token', '', { path: '/', maxAge: 0 });
                 return response;
             }
         }
@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
             const loginUrl = new URL('/login', request.url);
             loginUrl.searchParams.set('next', pathname);
             const response = NextResponse.redirect(loginUrl);
-            response.cookies.delete('token');
+            response.cookies.set('token', '', { path: '/', maxAge: 0 });
             return response;
         }
     }

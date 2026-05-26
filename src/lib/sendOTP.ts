@@ -15,10 +15,15 @@ const sendOTP = async (email: string, otp: string) => {
         });
         console.log(response);
 
+        if (response.error) {
+            console.error("Resend Error:", response.error);
+            return { success: false, message: response.error.message || "Failed to send OTP" };
+        }
+
         return { success: true, message: "Check your email for verification OTP" };
     }
     catch(e) {
-        console.log(e);
+        console.error(e);
         return { success: false, message: "Failed to send OTP" };
     }
 }

@@ -4,21 +4,33 @@ import { NextRequest, NextResponse } from "next/server";
 import dbconnect from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 import { redis } from "@/lib/redis";
+import { rateLimit, getClientIP } from "@/lib/rateLimit";
 
 export async function POST(req : NextRequest){
   try{
-   await dbconnect();
+    await dbconnect();
+
+    // IP-based Rate Limiting to prevent signup spam
+    const ip = getClientIP(req);
+    const ipLimit = await rateLimit({
+      key: `rl:signup:ip:${ip}`,
+      limit: 5,
+      windowSeconds: 900, // 5 signup attempts per 15 minutes per IP
+    });
+    if (ipLimit) return ipLimit;
+
     const {name, password, email} = await req.json();
     if (!name || !password || !email){
       return NextResponse.json({message :"Missing field"}, {status:400});
     }
-    if(await UserModel.findOne({email})){
+    const normalizedEmail = email.toLowerCase().trim();
+    if(await UserModel.findOne({email: normalizedEmail})){
       return NextResponse.json({message:"User already exist"}, {status:400});
     }
     const hashPassword = await bcrypt.hash(password, 10);
     const user = await UserModel.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashPassword,
       isAccountVerified: false,
       lastLoginAt: new Date(),

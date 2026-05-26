@@ -2,29 +2,38 @@ import { NextRequest, NextResponse } from "next/server";
 import dbconnect from "@/lib/mongodb";
 import UserModel from "@/models/user_model";
 import bcrypt from "bcryptjs";
+import { decrypt } from "@/lib/jose_auth";
 
 export async function POST(req: NextRequest){
     try{
         await dbconnect();
-        const {email, password} = await req.json();
+        const { password } = await req.json();
 
-        if(!email || !password){
-            return NextResponse.json({message:"email and password Required"},{status:400})
+        if(!password){
+            return NextResponse.json({message:"New password is required"},{status:400})
         }
 
-        const user = await UserModel.findOne({email});
+        const resetCookie = req.cookies.get("resetPassword")?.value;
+        if (!resetCookie) {
+            return NextResponse.json({message: "Unauthorized or session expired. Please verify your OTP again."}, {status: 401});
+        }
+
+        const payload = await decrypt(resetCookie);
+        if (!payload || !payload.userId) {
+            return NextResponse.json({message: "Invalid session. Please verify your OTP again."}, {status: 401});
+        }
+
+        const user = await UserModel.findById(payload.userId);
         if(!user){
-            return NextResponse.json({message: "Invalid Credentials"}, {status: 400});
+            return NextResponse.json({message: "User not found"}, {status: 400});
         }
 
-        if(user.resetOtpVerifiedTill < Date.now()){
-            return NextResponse.json({message: "Time limit exceeded for resetting password"}, {status: 400});
-        }
         user.password = await bcrypt.hash(password, 10);
-        user.resetOtpVerifiedTill = 0;
         await user.save();
         
-        return NextResponse.json({message: "Password reset successful. Continue to login with new password"}, {status: 201});
+        const response = NextResponse.json({message: "Password reset successful. Continue to login with new password"}, {status: 201});
+        response.cookies.set("resetPassword", "", { path: "/", maxAge: 0 });
+        return response;
     }
     catch(error: unknown){
         if (error instanceof Error) {

@@ -20,29 +20,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  verifyOtp: {
-    type: String,
-    default: "",
-  },
-  verifyOtpExpireAt: {
-    type: Date,
-    default: 0,
-  },
   isAccountVerified: {
     type: Boolean,
     default: false,
-  },
-  resetOtp: {
-    type: String,
-    default: "",
-  },
-  resetOtpExpireAt: {
-    type: Date,
-    default: 0,
-  },
-  resetOtpVerifiedTill: {
-    type: Date,
-    default: 0,
   },
   createdAt: {
     type: Date,
