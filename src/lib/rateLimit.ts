@@ -2,9 +2,9 @@ import { redis } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 
 interface RateLimitOptions {
-  key: string;        // unique redis key (e.g. "rl:send-otp:email@x.com")
-  limit: number;      // max requests allowed in the window
-  windowSeconds: number; // rolling window in seconds
+  key: string;
+  limit: number;
+  windowSeconds: number; 
 }
 
 /**
