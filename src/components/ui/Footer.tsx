@@ -23,7 +23,7 @@ export default function Footer() {
 	const year = new Date().getFullYear();
 
 	return (
-		<footer className="relative mt-20 overflow-hidden border-t border-slate-200 bg-gradient-to-b from-white via-cyan-50/70 to-emerald-100/60 text-slate-700">
+		<footer id="app-footer" className="relative mt-20 overflow-hidden border-t border-slate-200 bg-gradient-to-b from-white via-cyan-50/70 to-emerald-100/60 text-slate-700">
 			<div
 				aria-hidden
 				className="pointer-events-none absolute inset-0"

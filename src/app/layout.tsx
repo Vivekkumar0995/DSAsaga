@@ -8,7 +8,6 @@ import {Providers} from "@/components/heroUI/providers";
 import { Toaster } from 'react-hot-toast';
 import { decrypt } from "@/lib/jose_auth";
 import Script from 'next/script'
-import AppSidebar from "@/components/ui/AppSidebar";
 import ClientLayoutWrapper from "@/components/ui/ClientLayoutWrapper";
 
 const geistSans = Geist({
@@ -44,7 +43,7 @@ export default async function RootLayout({
        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
     <Providers>
       <div className="flex min-h-screen bg-[#F8F9FA]">
-        <AppSidebar initialUser={initialUser} />
+        
         <ClientLayoutWrapper>
           <Navbar initialUser={initialUser} />
           <main className="flex-1">
