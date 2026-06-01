@@ -3,32 +3,10 @@
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { BookOpen, Play, CheckCircle, ChevronRight } from "lucide-react"
+import { Data_Structure_Props } from "@/types/data_structure"
+import { spacedToSnakeCase, getNumberOfCompletedLessons } from "@/lib/utils"
 
-const tracks = [
-  {
-    title: "Array Fundamentals",
-    lessons: 12,
-    completed: 8,
-    difficulty: "Beginner",
-    color: "from-green-500 to-emerald-500",
-  },
-  {
-    title: "Two Pointer Technique",
-    lessons: 8,
-    completed: 3,
-    difficulty: "Intermediate",
-    color: "from-teal-500 to-cyan-500",
-  },
-  {
-    title: "Sliding Window",
-    lessons: 10,
-    completed: 0,
-    difficulty: "Intermediate",
-    color: "from-blue-500 to-indigo-500",
-  },
-]
-
-export function LearningHubSection() {
+export function LearningHubSection({ ds_param, learning_stats, learning_tracks }: Data_Structure_Props) {
   return (
     <section className="relative z-10 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -50,7 +28,9 @@ export function LearningHubSection() {
 
         {/* Learning Tracks */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {tracks.map((track, i) => (
+          {learning_tracks?.map((track, i) => {
+
+            return (
             <motion.div
               key={track.title}
               initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
@@ -58,10 +38,10 @@ export function LearningHubSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
             >
-              <Link href="/battles/array-battle/learn">
+              <Link href={`${ds_param}/learn/${spacedToSnakeCase(track.title)}`}>
                 <div className="bg-white shadow-sm hover:shadow-md border border-gray-200 rounded-2xl p-6 transition-shadow">
                   <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center`}>
+                    <div className={`w-12 h-12 rounded-xl bg-linear-to-br from-teal-500 to-cyan-500 flex items-center justify-center`}>
                         <BookOpen className="w-6 h-6 text-white" />
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -76,34 +56,35 @@ export function LearningHubSection() {
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{track.title}</h3>
 
                   <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                    <span>{track.lessons} lessons</span>
+                    <span>{track.lessons?.length} lessons</span>
                     <span className="flex items-center gap-1">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      {track.completed}/{track.lessons}
+                      {getNumberOfCompletedLessons(track, learning_stats)}/{track.lessons?.length}
                     </span>
                   </div>
 
 
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className={`h-full bg-gradient-to-r ${track.color} rounded-full transition-all`}
-                      ref={(el) => { if (el) el.style.width = `${(track.completed / track.lessons) * 100}%`; }}
+                      className={`h-full bg-linear-to-r from-teal-500 to-cyan-500 rounded-full transition-all`}
+                      ref={(el) => { if (el) el.style.width = `${(getNumberOfCompletedLessons(track, learning_stats) / track.lessons?.length!) * 100}%`; }}
                     />
                   </div>
 
                 </div>
               </Link>
             </motion.div>
-          ))}
+            )
+          })}
         </div>
 
-        {/* CTA */}
+
         <div className="text-center">
-          <Link href="/battles/array-battle/learn">
+          <Link href={`${ds_param}/learn`}>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl text-gray-900 font-semibold"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200  hover:cursor-pointer border border-gray-200 rounded-xl text-gray-900 font-semibold"
             >
               <Play className="w-5 h-5 text-teal-600" />
               Explore All Tracks
