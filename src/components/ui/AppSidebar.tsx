@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, BookOpen, Swords, GraduationCap, Trophy } from 'lucide-react'
+import { snakeToTitleCase } from '@/lib/utils'
 
 type AuthUser = {
   userId?: string;
@@ -14,29 +15,20 @@ type SidebarProps = {
 
 const navItems = [
   { href: '/', icon: Home, label: 'Home' },
+  { href: '/learn', icon: GraduationCap, label: 'Learn' },
   { href: '/practice', icon: BookOpen, label: 'Practice' },
   { href: '/battle', icon: Swords, label: 'Battle' },
-  { href: '/learn', icon: GraduationCap, label: 'Learn' },
   { href: '/main/leaderboard', icon: Trophy, label: 'Leaderboard' },
   { href: '/main/profile', icon: Home, label: 'Profile' },
 ]
 
 export default function Sidebar({ initialUser }: SidebarProps) {
   const pathname = usePathname()
-  const allowedTopics = ['array-battle', 'string-battle', 'searching-techniques']
   const pathParts = pathname.split('/').filter(Boolean)
-  const topicIndex = pathParts[0] === 'battles' ? 1 : 0
-  const currentTopic = pathParts[topicIndex] || ''
-  const isBattlesRoute = pathParts[0] === 'battles' && allowedTopics.includes(currentTopic)
-  const isRootTopicRoute = allowedTopics.includes(currentTopic) && pathParts[0] !== 'battles'
+  const currentTopic = pathParts[0] || ''
 
-  // Only show the sidebar for supported topic pages
-  if (!isBattlesRoute && !isRootTopicRoute) {
-    return null;
-  }
-
-  const topicBasePath = isBattlesRoute ? `/battles/${currentTopic}` : `/${currentTopic}`
-  const topicName = currentTopic ? currentTopic.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : '';
+  const topicBasePath = `/${currentTopic}`
+  const topicName = snakeToTitleCase(currentTopic);
 
   // Update nav links based on the current topic if we are inside one
   const contextualNavItems = currentTopic
@@ -60,9 +52,10 @@ export default function Sidebar({ initialUser }: SidebarProps) {
     : navItems;
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-[#E5E7EB] flex flex-col z-40 pt-28">
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-[#E5E7EB]">
+    <aside className="w-64 border-r border-[#E5E7EB] bg-white hidden lg:flex flex-col relative shrink-0">
+      <div className="sticky top-28 h-[calc(100vh-7rem)] flex flex-col overflow-y-auto">
+        {/* Logo */}
+        <div className="px-6 py-5 border-b border-[#E5E7EB]">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-[#10B981] rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">
@@ -115,6 +108,7 @@ export default function Sidebar({ initialUser }: SidebarProps) {
             <p className="text-xs text-[#6B7280]">{initialUser?.userId ? 'Account connected' : 'Not signed in'}</p>
           </div>
         </div>
+      </div>
       </div>
     </aside>
   )

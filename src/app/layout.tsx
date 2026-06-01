@@ -41,25 +41,22 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-    <Providers>
-      <div className="flex min-h-screen bg-[#F8F9FA]">
-          <AppSidebar initialUser={initialUser} />
-        <ClientLayoutWrapper>
-          <Navbar initialUser={initialUser} />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-        </ClientLayoutWrapper>
-      </div>
-      <Toaster position="top-center" reverseOrder={false} />
-    </Providers>
-         <Script
-          src="https://accounts.google.com/gsi/client"
-          strategy="beforeInteractive"
-        />
-</body>
+       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-red-700`}>
+          <Providers>
+            {/* <div className="flex min-h-screen bg-[#F8F9FA]"> */}
+              {/* <AppSidebar initialUser={initialUser} /> */}
+              {/* <ClientLayoutWrapper> */}
+                <Navbar initialUser={initialUser} />
+                <main className="flex-1">
+                  {children}
+                </main>
+                <Footer />
+              {/* </ClientLayoutWrapper> */}
+            {/* </div> */}
+            <Toaster position="top-center" reverseOrder={false} />
+          </Providers>
+          <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
+        </body>
     </html>
   );
 }
