@@ -1,53 +1,47 @@
 import PracticeClient from "@/components/data_structure/practice/PracticeClient";
 
-export default async function BattlePage({
-  params
+async function getDataStructure(slug: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/data-structure/${slug}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
+}
+
+export default async function PracticePage({
+  params,
 }: {
-  params: Promise<{ data_structure: string }>
+  params: Promise<{ data_structure: string }>;
 }) {
   const { data_structure } = await params;
-  
-  // --------------------------------------------------------------------------------------
-  //          To be added dynamically when we setup the database for learning materials
-  // --------------------------------------------------------------------------------------
+  const dsData = await getDataStructure(data_structure);
 
-  // DYNAMIC CONTENT START
-
-  const problems = [
-    { id: 1, title: "Two Sum", difficulty: "Easy", category: "Array Fundamentals", acceptance_rate: 49, time: "~10 min" },
-    { id: 2, title: "Remove Duplicates from Sorted Array", difficulty: "Easy", category: "Two Pointers", acceptance_rate: 52, time: "~8 min" },
-    { id: 3, title: "Maximum Subarray", difficulty: "Medium", category: "Kadane's Algorithm", acceptance_rate: 50, time: "~15 min" },
-    { id: 4, title: "Container With Most Water", difficulty: "Medium", category: "Two Pointers", acceptance_rate: 54, time: "~15 min" },
-    { id: 5, title: "3Sum", difficulty: "Medium", category: "Two Pointers", acceptance_rate: 32, time: "~20 min" },
-    { id: 6, title: "Subarray Sum Equals K", difficulty: "Medium", category: "Prefix Sum", acceptance_rate: 44, time: "~20 min" },
-    { id: 7, title: "Search in Rotated Sorted Array", difficulty: "Medium", category: "Binary Search", acceptance_rate: 38, time: "~20 min" },
-    { id: 8, title: "Find Minimum in Rotated Sorted Array", difficulty: "Medium", category: "Binary Search", acceptance_rate: 48, time: "~15 min" },
-    { id: 9, title: "Maximum Average Subarray I", difficulty: "Easy", category: "Sliding Window", acceptance_rate: 43, time: "~10 min" },
-    { id: 10, title: "Longest Repeating Character Replacement", difficulty: "Medium", category: "Sliding Window", acceptance_rate: 51, time: "~20 min" },
-    { id: 11, title: "Trapping Rain Water", difficulty: "Hard", category: "Two Pointers", acceptance_rate: 58, time: "~25 min" },
-    { id: 12, title: "Median of Two Sorted Arrays", difficulty: "Hard", category: "Binary Search", acceptance_rate: 35, time: "~30 min" },
-  ]
-
-  const problem_stats = [
-    { id: 1, solved: true, attempted: true, bookmarked: false},
-    { id: 2, solved: true, attempted: true, bookmarked: true},
-    { id: 3, solved: false, attempted: true, bookmarked: false},
-    { id: 4, solved: true, attempted: true, bookmarked: false},
-    { id: 5, solved: false, attempted: false, bookmarked: true},
-    { id: 7, solved: false, attempted: true, bookmarked: false},
-    { id: 8, solved: true, attempted: true, bookmarked: false},
-    { id: 9, solved: false, attempted: true, bookmarked: true},
-    { id: 11, solved: false, attempted: true, bookmarked: false},
-  ]
-
-  // DYNAMIC CONTENT END
-  
-  // --------------------------------------------------------------------------------------
-  //          To be added dynamically when we setup the database for learning materials
-  // --------------------------------------------------------------------------------------
-
+  if (!dsData) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-center px-4">
+        <div className="text-6xl mb-4">🚧</div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 capitalize">
+          {data_structure.replace(/-/g, " ")}
+        </h1>
+        <p className="text-gray-500 text-lg mb-6">
+          This data structure hasn&apos;t been added yet.
+        </p>
+        <a href="/admin/data-structure" className="px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors">
+          Add it via Admin Panel →
+        </a>
+      </div>
+    );
+  }
 
   return (
-    <PracticeClient ds_param={data_structure} problems={problems} problem_stats={problem_stats}/>
-  )
-}
+    <PracticeClient
+      ds_param={data_structure}
+      problems={dsData.problems}
+      problem_stats={[]} // user-specific stats — to be built later
+    />
+  );
+}

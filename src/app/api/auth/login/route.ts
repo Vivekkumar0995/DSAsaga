@@ -12,12 +12,12 @@ export async function POST(req :NextRequest){
   try{
     await dbconnect();
 
-    // 1. IP-based Rate Limiting for login attempts
+    
     const ip = getClientIP(req);
     const ipLimit = await rateLimit({
       key: `rl:login:ip:${ip}`,
       limit: 10,
-      windowSeconds: 900, // 10 attempts per 15 minutes per IP
+      windowSeconds: 900,
     });
     if (ipLimit) return ipLimit;
 
@@ -29,11 +29,11 @@ export async function POST(req :NextRequest){
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // 2. Email-based Rate Limiting for login attempts
+   
     const emailLimit = await rateLimit({
       key: `rl:login:email:${normalizedEmail}`,
       limit: 5,
-      windowSeconds: 900, // 5 attempts per 15 minutes per Email
+      windowSeconds: 900, 
     });
     if (emailLimit) return emailLimit;
 

@@ -10,12 +10,11 @@ export async function POST(req : NextRequest){
   try{
     await dbconnect();
 
-    // IP-based Rate Limiting to prevent signup spam
     const ip = getClientIP(req);
     const ipLimit = await rateLimit({
       key: `rl:signup:ip:${ip}`,
       limit: 5,
-      windowSeconds: 900, // 5 signup attempts per 15 minutes per IP
+      windowSeconds: 900, 
     });
     if (ipLimit) return ipLimit;
 
@@ -36,7 +35,6 @@ export async function POST(req : NextRequest){
       lastLoginAt: new Date(),
     });
 
-    // Create a default leaderboard entry for the new user
     await LeaderboardModel.create({
       userId: user._id,
       score: 0,
@@ -44,7 +42,6 @@ export async function POST(req : NextRequest){
       rank: "Beginner"
     });
 
-    // Add new user to the redis leaderboard with 0 score
     await redis.zadd("leaderboard", { score: 0, member: user._id.toString() });
 
   return NextResponse.json({message:"Account created!!" , userId :user._id.toString()},{status:201})
