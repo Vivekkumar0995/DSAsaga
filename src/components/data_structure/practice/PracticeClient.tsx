@@ -22,7 +22,7 @@ import { Data_Structure_Props } from "@/types/data_structure"
 //   { id: 12, title: "Median of Two Sorted Arrays", difficulty: "Hard", category: "Binary Search", solved: false, bookmarked: false, acceptance: "35%", time: "~30 min" },
 // ]
 
-export default function PracticePage( { ds_param, problems, problem_stats } : Data_Structure_Props) {
+export default function PracticePage({ ds_param, problems, problem_stats }: Data_Structure_Props) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedDifficulty, setSelectedDifficulty] = useState("All")
@@ -33,7 +33,7 @@ export default function PracticePage( { ds_param, problems, problem_stats } : Da
   const categories = new Set<string>(["All"]);
   const difficulties = new Set<string>(["All"]);
 
-  for( let problem of problems! ) {
+  for (let problem of problems!) {
     categories.add(problem.category);
     difficulties.add(problem.difficulty);
   }
@@ -79,7 +79,7 @@ export default function PracticePage( { ds_param, problems, problem_stats } : Da
                 Practice <span className="ab-text-gradient">Arena</span>
               </h1>
               <p className="text-gray-400 text-lg">
-                Sharpen your skills with {Math.round((problems?.length|| 0) / 10) * 10}+ curated problems
+                Sharpen your skills with {Math.round((problems?.length || 0) / 10) * 10}+ curated problems
               </p>
             </motion.div>
           </div>
@@ -172,11 +172,10 @@ export default function PracticePage( { ds_param, problems, problem_stats } : Da
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    selectedCategory === cat
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedCategory === cat
                       ? "bg-linear-to-r from-teal-500 to-green-500 text-black"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                    }`}
                 >
                   {cat}
                 </button>
@@ -203,8 +202,8 @@ export default function PracticePage( { ds_param, problems, problem_stats } : Da
 
             {/* Problems */}
             {filteredProblems?.map((problem, i) => {
-              
-              const corresponding_stat = problem_stats?.find(p => p.id == problem.id) || { solved: false, attempted: false, bookmarked: false};
+
+              const corresponding_stat = problem_stats?.find(p => p.id == problem.id) || { solved: false, attempted: false, bookmarked: false };
 
               return (
                 <motion.div
@@ -221,7 +220,7 @@ export default function PracticePage( { ds_param, problems, problem_stats } : Da
                       corresponding_stat.attempted ? (
                         <CircleDot className="w-5 h-5 text-yellow-500" />
                       ) :
-                      <Circle className="w-5 h-5 text-gray-600" />
+                        <Circle className="w-5 h-5 text-gray-600" />
                     )}
                   </div>
                   <div className="col-span-5">
@@ -233,11 +232,10 @@ export default function PracticePage( { ds_param, problems, problem_stats } : Da
                     </div>
                   </div>
                   <div className="col-span-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      problem.difficulty === "Easy" ? "bg-green-500/20 text-green-400" :
-                      problem.difficulty === "Medium" ? "bg-yellow-500/20 text-yellow-400" :
-                      "bg-red-500/20 text-red-400"
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${problem.difficulty === "Easy" ? "bg-green-500/20 text-green-400" :
+                        problem.difficulty === "Medium" ? "bg-yellow-500/20 text-yellow-400" :
+                          "bg-red-500/20 text-red-400"
+                      }`}>
                       {problem.difficulty}
                     </span>
                   </div>

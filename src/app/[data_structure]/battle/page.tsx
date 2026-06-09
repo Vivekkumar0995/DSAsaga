@@ -1,64 +1,52 @@
-import BattleClient from "@/components/data_structure/battle/BattleClient"
+import BattleClient from "@/components/data_structure/battle/BattleClient";
+
+async function getDataStructure(slug: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/data-structure/${slug}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
+}
 
 export default async function BattlePage({
-  params
+  params,
 }: {
-  params: Promise<{ data_structure: string }>
+  params: Promise<{ data_structure: string }>;
 }) {
   const { data_structure } = await params;
-  
-  // --------------------------------------------------------------------------------------
-  //          To be added dynamically when we setup the database for learning materials
-  // --------------------------------------------------------------------------------------
+  const dsData = await getDataStructure(data_structure);
 
-  // DYNAMIC CONTENT START
-
-  const stats = {
-    rating: 1847,
-    win_rate: 67,
-    battles: 142,
-    win_streak: 12
+  if (!dsData) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-center px-4">
+        <div className="text-6xl mb-4">🚧</div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 capitalize">
+          {data_structure.replace(/-/g, " ")}
+        </h1>
+        <p className="text-gray-500 text-lg mb-6">
+          This data structure hasn&apos;t been added yet.
+        </p>
+        <a href="/admin/data-structure" className="px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors">
+          Add it via Admin Panel →
+        </a>
+      </div>
+    );
   }
 
-  const battle_modes = [
-    {
-      icon: "Zap",
-      title: "Unranked Match",
-      description: "Jump into a 5-minute battle instantly",
-      time: "5 min",
-      color: "from-yellow-500 to-orange-500"
-    },
-    {
-      icon: "Trophy",
-      title: "Ranked Battle",
-      description: "Do it competitively",
-      time: "15 min",
-      color: "from-teal-500 to-green-500"
-    },
-    {
-      icon: "Users",
-      title: "Friend Challenge",
-      description: "Challenge a friend with a custom room code",
-      time: "custom",
-      color: "from-purple-500 to-pink-500"
-    }
-  ]
-
-  const recent_matches = [
-    { opponent_user_name: "CodeMaster", result: "win", rating_change: 25, problem: "Two Sum", time: "2h ago" },
-    { opponent_user_name: "AlgoKing", result: "loss", rating_change: -18, problem: "Valid Parentheses", time: "5h ago" },
-    { opponent_user_name: "ByteNinja", result: "win", rating_change: +22, problem: "Merge Intervals", time: "1d ago" },
-  ]
-
-
-  // DYNAMIC CONTENT END
-  
-  // --------------------------------------------------------------------------------------
-  //          To be added dynamically when we setup the database for learning materials
-  // --------------------------------------------------------------------------------------
-
+  // battle_stats and recent_matches are user-specific — to be built with user-progress tracking later
+  const stats = { rating: 0, win_rate: 0, battles: 0, win_streak: 0 };
+  const recent_matches: never[] = [];
 
   return (
-    <BattleClient ds_param={data_structure} battle_stats={stats} battle_modes={battle_modes} recent_matches={recent_matches}/>
-  )
-}
+    <BattleClient
+      ds_param={data_structure}
+      battle_stats={stats}
+      battle_modes={dsData.battle_modes}
+      recent_matches={recent_matches}
+    />
+  );
+}
