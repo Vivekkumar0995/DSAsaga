@@ -1,48 +1,47 @@
-type Props = {
-  params: Promise<{
-    data_structure: string;
-  }>;
-};
+import PracticeClient from "@/components/data_structure/practice/PracticeClient";
 
-async function getQuestions(slug: string) {
-  const res = await fetch(
-    `http://localhost:3000/api/questions?dsSlug=${slug}`,
-    { cache: "no-store" },
-  );
-  return res.json();
+async function getDataStructure(slug: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/data-structure/${slug}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
 }
 
-export default async function PracticePage({ params }: Props) {
+export default async function PracticePage({
+  params,
+}: {
+  params: Promise<{ data_structure: string }>;
+}) {
   const { data_structure } = await params;
+  const dsData = await getDataStructure(data_structure);
 
-  const data = await getQuestions(data_structure);
+  if (!dsData) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-center px-4">
+        <div className="text-6xl mb-4">🚧</div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 capitalize">
+          {data_structure.replace(/-/g, " ")}
+        </h1>
+        <p className="text-gray-500 text-lg mb-6">
+          This data structure hasn&apos;t been added yet.
+        </p>
+        <a href="/admin/data-structure" className="px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors">
+          Add it via Admin Panel →
+        </a>
+      </div>
+    );
+  }
 
   return (
-    <div className="pt-28 px-10">
-      <h1 className="text-3xl font-bold mb-6">{data_structure} Practice</h1>
-      <div className="space-y-5">
-        {data.questions?.map((question: any) => (
-          <a key={question._id} href={`/${data_structure}/practice/${question.slug}`} className="block border border-neutral-200 rounded-3xl p-6 bg-white hover:shadow-md transition">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-2xl font-bold text-black">
-                  {question.title}
-                </h2>
-                <div className="flex gap-3 mt-3">
-                  <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
-                    {question.difficulty}
-                  </span>
-
-                  <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm">
-                    {question.xp} XP
-                  </span>
-                </div>
-              </div>
-              <div className="text-neutral-400">→</div>
-            </div>
-          </a>
-        ))}
-      </div>
-    </div>
+    <PracticeClient
+      ds_param={data_structure}
+      problems={dsData.problems}
+      problem_stats={[]} // user-specific stats — to be built later
+    />
   );
-}
+}

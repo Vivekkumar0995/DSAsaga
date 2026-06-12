@@ -2,7 +2,6 @@
 
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import QuestionModel from "@/models/question_model";
 import Link from "next/link";
 import {
   FiCamera,
@@ -21,9 +20,6 @@ const ProfileHeader = () => {
   const bannerImageInputRef = useRef<HTMLInputElement>(null);
 
   const [userData, setUserData] = useState<any>(null);
-  const [progress, setProgress] = useState<any>(null);
-  const [recentSolved, setRecentSolved] = useState<any[]>([]);
-  const [questionStats,setQuestionStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
@@ -34,9 +30,6 @@ const ProfileHeader = () => {
 
         if (res.data.data) {
           setUserData(res.data.data);
-          setProgress(res.data.progress);
-          setRecentSolved(res.data.recentSolved || []);
-          setQuestionStats(res.data.questionStats);
         }
       } catch (error: any) {
         console.log("Error fetching profile:", error.message);
@@ -208,124 +201,6 @@ const ProfileHeader = () => {
                 <FiSettings /> Settings
               </Link>
             </div>
-          </div>
-        </div>
-      </div>
-      {/* LOWER PROFILE STATS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT SIDE */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* STATS */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <StatCard
-              title="Level"
-              value={String(progress?.level || 0)}
-              icon={<FiAward />}
-            />
-
-            <StatCard
-              title="XP"
-              value={`${progress?.xp || 0}`}
-              icon={<FiTrendingUp />}
-            />
-
-            <StatCard
-              title="Solved"
-              value={`${progress?.solvedCount || 0}`}
-              icon={<FiTarget />}
-            />
-
-            <StatCard
-              title="Rank"
-              value={progress?.currentRank || "Beginner"}
-              icon={<FiAward />}
-            />
-
-            <StatCard
-              title="Streak"
-              value={`${progress?.currentStreak || 0}`}
-              icon={<FiClock />}
-            />
-          </div>
-
-          {/* DIFFICULTY */}
-          <div className="bg-white rounded-3xl p-6 shadow">
-            <h2 className="text-xl font-bold mb-5">Problem Progress</h2>
-
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between">
-                  <span>Easy</span>
-                  <span>{progress?.easySolved || 0}</span>
-                </div>
-
-                <div className="h-3 bg-gray-200 rounded-full mt-2">
-                  <div
-                    className="h-3 bg-green-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(
-                        ((progress?.easySolved || 0)/(questionStats?.easy || 1)) * 100,
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between">
-                  <span>Medium</span>
-                  <span>{progress?.mediumSolved || 0}</span>
-                </div>
-
-                <div className="h-3 bg-gray-200 rounded-full mt-2">
-                  <div
-                    className="h-3 bg-yellow-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(
-                        ((progress?.mediumSolved || 0)/(questionStats?.medium || 1)) * 100,
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between">
-                  <span>Hard</span>
-                  <span>{progress?.hardSolved || 0}</span>
-                </div>
-
-                <div className="h-3 bg-gray-200 rounded-full mt-2">
-                  <div
-                    className="h-3 bg-red-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(
-                        ((progress?.hardSolved || 0)/(questionStats?.hard || 1)) * 100
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RECENT ACTIVITY */}
-        <div className="bg-white rounded-3xl shadow p-6">
-          <h2 className="text-xl font-bold mb-5">Recent Activity</h2>
-
-          <div className="space-y-4">
-            {recentSolved.length === 0 ? (
-              <p className="text-gray-500">No solved questions yet.</p>
-            ) : (
-              recentSolved.map((item) => (
-                <div key={item._id} className="rounded-2xl bg-gray-100 p-4">
-                  <p className="font-semibold">✅ {item.questionSlug}</p>
-
-                  <p className="text-sm text-gray-600">+{item.xpEarned} XP</p>
-                </div>
-              ))
-            )}
           </div>
         </div>
       </div>

@@ -40,8 +40,8 @@ export default async function RootLayout({
       : null;
 
   return (
-     <html lang="en">
-       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#F8FAFC]`}>
+    <html lang="en">
+       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-red-700`}>
           <Providers>
             {/* <div className="flex min-h-screen bg-[#F8F9FA]"> */}
               {/* <AppSidebar initialUser={initialUser} /> */}

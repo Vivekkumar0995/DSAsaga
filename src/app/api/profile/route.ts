@@ -3,9 +3,6 @@ import dbconnect from "@/lib/mongodb";
 import UserModel from "@/models/user_model";
 import { decrypt } from "@/lib/jose_auth";
 import { v2 as cloudinary } from "cloudinary";
-import UserProgress from "@/models/UserProgress";
-import SolvedQuestion from "@/models/SolvedQuestion";
-import QuestionModel from "@/models/question_model";
 
 const hasCloudinaryConfig =
   !!process.env.CLOUDINARY_CLOUD_NAME &&
@@ -25,7 +22,7 @@ const getUserIdFromToken = async (req: NextRequest) => {
     const token = req.cookies.get("token")?.value;
     if (!token) return null;
 
-    const decoded = (await decrypt(token)) as {
+    const decoded = await decrypt(token) as {
       userId: unknown;
     };
     if (typeof decoded.userId === "string") {
@@ -117,17 +114,13 @@ export async function PUT(req: NextRequest) {
     }
 
     const incomingProfileImage =
-      typeof updateData.profileImage === "string"
-        ? updateData.profileImage
-        : null;
+      typeof updateData.profileImage === "string" ? updateData.profileImage : null;
     const currentProfileImage =
       typeof existingUser.profileImage === "string"
         ? existingUser.profileImage
         : null;
     const incomingBannerImage =
-      typeof updateData.bannerImage === "string"
-        ? updateData.bannerImage
-        : null;
+      typeof updateData.bannerImage === "string" ? updateData.bannerImage : null;
     const currentBannerImage =
       typeof existingUser.bannerImage === "string"
         ? existingUser.bannerImage
@@ -160,8 +153,7 @@ export async function PUT(req: NextRequest) {
       incomingBannerImage !== currentBannerImage &&
       hasCloudinaryConfig
     ) {
-      const oldBannerPublicId =
-        getCloudinaryPublicIdFromUrl(currentBannerImage);
+      const oldBannerPublicId = getCloudinaryPublicIdFromUrl(currentBannerImage);
       if (oldBannerPublicId) {
         try {
           await cloudinary.uploader.destroy(oldBannerPublicId, {
@@ -218,40 +210,7 @@ export async function GET(req: NextRequest) {
       await user.save();
     }
 
-    const progress = await UserProgress.findOne({ userId });
-
-    const recentSolved = await SolvedQuestion.find({ userId, status: "solved" })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select("questionSlug xpEarned solvedAt");
-
-    const easyCount = await QuestionModel.countDocuments({
-      difficulty: "easy",
-    });
-
-    const mediumCount = await QuestionModel.countDocuments({
-      difficulty: "medium",
-    });
-
-    const hardCount = await QuestionModel.countDocuments({
-      difficulty: "hard",
-    });
-
-    return NextResponse.json(
-      {
-        data: user,
-        progress,
-        recentSolved,
-        questionStats: {
-          easy: easyCount,
-          medium: mediumCount,
-          hard: hardCount,
-        },
-      },
-      {
-        status: 200,
-      },
-    );
+    return NextResponse.json({ data: user }, { status: 200 });
   } catch (error: any) {
     console.log("Error on fetching profile:", error.message);
     return NextResponse.json(
