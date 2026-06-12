@@ -5,7 +5,7 @@ export interface PopulatedUser {
   _id: string;
   name: string;
   profileImage?: string;
-} 
+}
 
 export interface LeaderboardEntry {
   _id: string;

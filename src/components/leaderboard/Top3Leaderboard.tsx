@@ -5,15 +5,12 @@ import { motion, useMotionValue, useSpring } from "framer-motion";
 
 export type TopLeaderboardUser = {
   rank: 1 | 2 | 3;
+  name: string;
   score: number;
-  userId?: {
-    name: string;
-    profileImage?: string;
-  };
 };
 
 interface Top3LeaderboardProps {
-  topUsers: TopLeaderboardUser[]; 
+  topUsers: TopLeaderboardUser[];
 }
 
 const TypewriterText = ({ strings, typeSpeed = 50, backSpeed = 30, backDelay = 1500 }: { strings: string[], typeSpeed?: number, backSpeed?: number, backDelay?: number }) => {
@@ -168,7 +165,7 @@ const CubeCard = ({ user, rank, scale }: { user: TopLeaderboardUser; rank: 1 | 2
             {rank}
           </span>
           <span className="font-mono text-white text-lg sm:text-xl mt-2 font-bold w-full break-words whitespace-normal leading-tight">
-            {user.userId?.name || "Anonymous"}
+            {user.name}
           </span>
           <span className="font-mono text-sm sm:text-base mt-2 font-bold transition-all duration-500" style={{ color: color }}>
             Score: {user.score.toLocaleString()}
@@ -199,7 +196,7 @@ const CubeCard = ({ user, rank, scale }: { user: TopLeaderboardUser; rank: 1 | 2
       </div>
       <div className="flex-1 p-3 sm:p-4 overflow-hidden pointer-events-none flex flex-col gap-2 relative z-10">
         <TypewriterText strings={[
-          `Name: ${user.userId?.name || "Anonymous"}\nRank: #${rank}\nProblems Solved: ${user.score.toLocaleString()}`
+          `Name: ${user.name}\nRank: #${rank}\nProblems Solved: ${user.score.toLocaleString()}`
         ]} typeSpeed={60} backSpeed={30} backDelay={2000} />
       </div>
     </div>
@@ -258,7 +255,7 @@ export const Top3Leaderboard: React.FC<Top3LeaderboardProps> = ({ topUsers }) =>
     <div className="relative w-full flex flex-col items-center justify-center py-2 sm:py-4 overflow-visible">
       <div className="flex flex-col xl:flex-row items-center xl:items-start justify-center gap-y-36 xl:gap-x-12 2xl:gap-x-47 z-10 w-full max-w-7xl px-4 mt-6 xl:mt-12 mb-16 xl:mb-24">
         {displayOrder.map((rank) => {
-          const user = topUsers.find((u) => u.rank === rank) || { rank,score: 0,userId:{ name: "Anonymous" } };
+          const user = topUsers.find((u) => u.rank === rank) || { rank, name: "Unknown", score: 0 };
           const scale = rank === 1 ? 1.2 : 1.0;
 
           return (
