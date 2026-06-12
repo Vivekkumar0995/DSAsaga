@@ -3,7 +3,7 @@ import Image from "next/image";
 import { LeaderboardEntry } from "./LeaderboardTable";
 
 interface LeaderboardRowProps {
-  entry: LeaderboardEntry;
+  entry: LeaderboardEntry; 
   index: number;
 }
 
