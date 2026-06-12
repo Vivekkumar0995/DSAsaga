@@ -18,7 +18,7 @@ async function getQuestion(slug: string) {
 export default async function QuestionPage({ params }: Props) {
   const { question_id, data_structure } = await params;
 
-  const data = await getQuestion(question_id);
+  const data = await getQuestion(question_id); 
 
   const question = data.question;
   const previousQuestion = data.previousQuestion;
