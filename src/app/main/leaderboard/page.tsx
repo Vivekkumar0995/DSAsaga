@@ -49,11 +49,15 @@ export default function LeaderboardPage() {
   }
 
   // Extract top 3 leaders for the 3D leaderboard
-  const top3Users: TopLeaderboardUser[] = leaderboard.slice(0, 3).map((entry, index) => ({
-    rank: (index + 1) as 1 | 2 | 3,
-    name: entry.userId?.name || "Unknown",
-    score: entry.score
-  }));
+  const top3Users:TopLeaderboardUser[] =leaderboard.slice(0, 3).map((entry,index) => ({
+      rank: (index + 1) as 1 | 2 | 3,
+      score: entry.score,
+      userId:{
+        name:entry.userId?.name || "Anonymous",
+        profileImage:entry.userId?.profileImage
+        }
+    })
+  );
 
   const handleMouseMove = (e: React.MouseEvent) => {
     setMousePos({ x: e.clientX, y: e.clientY });
