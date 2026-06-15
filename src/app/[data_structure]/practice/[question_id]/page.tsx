@@ -3,7 +3,7 @@ import QuestionPanelsClient from "@/components/practice/QuestionPanelsClient";
 type Props = {
   params: Promise<{
     data_structure: string;
-    question_id: string;
+    question_id: string; 
   }>;
 };
 
@@ -18,7 +18,7 @@ async function getQuestion(slug: string) {
 export default async function QuestionPage({ params }: Props) {
   const { question_id, data_structure } = await params;
 
-  const data = await getQuestion(question_id);
+  const data = await getQuestion(question_id); 
 
   const question = data.question;
   const previousQuestion = data.previousQuestion;
