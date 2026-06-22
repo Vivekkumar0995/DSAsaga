@@ -232,3 +232,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+.editor-core-workspace:empty::before {
+  content: attr(data-placeholder);
+  color: #6272a4;
+  cursor: text;
+}

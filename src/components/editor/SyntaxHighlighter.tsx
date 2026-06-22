@@ -3,7 +3,7 @@ import { useSyntaxHighlight } from "@/hooks/editor/useSyntaxHighlight";
 interface Props {
   code: string;
 }
-const COLORS = {
+export const COLORS = {
   keyword: "#569CD6",     
   string: "#CE9178",
   number: "#B5CEA8",
