@@ -2,33 +2,87 @@ import React, { useLayoutEffect } from "react";
 import { useSyntaxHighlight } from "@/hooks/editor/useSyntaxHighlight";
 import { COLORS } from "@/components/editor/SyntaxHighlighter";
 
+export interface MatchRange {
+  start: number;
+  end: number;
+}
+
 interface EditorCoreProps {
   code: string;
   onChange: (code: string) => void;
   undo: () => void;
+  redo: () => void;
   editorRef: React.RefObject<HTMLDivElement | null>;
   saveCaretOffset: (element: HTMLElement) => number;
   restoreCaretOffset: (element: HTMLElement, offset: number) => void;
   caretOffsetRef: React.MutableRefObject<number>;
   placeholder?: string;
+  activeLang: string;
+
+  // Autocomplete bindings
+  completionsOpen: boolean;
+  completionsSelectNext: () => boolean;
+  completionsSelectPrev: () => boolean;
+  completionsClose: () => void;
+  completionsConfirm: () => void;
+  onTriggerCompletions: (
+    code: string,
+    offset: number,
+    getCoords: () => { x: number; y: number; height: number } | null
+  ) => void;
+
+  // Search & Replace highlights
+  searchQuery: string;
+  searchMatches: MatchRange[];
+  activeMatchIndex: number;
 }
 
-// ─── Build an HTML string from tokens (no React reconciliation) ──
-function tokensToHtml(tokens: ReturnType<typeof useSyntaxHighlight>): string {
+// ─── Build HTML from tokens overlaying search matches character-by-character ──
+function tokensToHtml(
+  tokens: ReturnType<typeof useSyntaxHighlight>,
+  searchMatches: MatchRange[],
+  activeMatchIndex: number
+): string {
+  let charIndex = 0;
   return tokens
     .map((token) => {
       const color = COLORS[token.type] || "#d4d4d4";
-      // Escape HTML entities so injected content is safe
-      const escaped = token.value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-      return `<span style="color:${color}">${escaped}</span>`;
+      const val = token.value;
+      let html = "";
+
+      for (let i = 0; i < val.length; i++) {
+        const absIdx = charIndex + i;
+
+        // Check if current char is in any search match
+        let matchIdx = -1;
+        for (let m = 0; m < searchMatches.length; m++) {
+          if (absIdx >= searchMatches[m].start && absIdx < searchMatches[m].end) {
+            matchIdx = m;
+            break;
+          }
+        }
+
+        const char = val[i];
+        let escaped = char
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+        if (matchIdx !== -1) {
+          const isActive = matchIdx === activeMatchIndex;
+          const bg = isActive ? "rgba(245, 158, 11, 0.45)" : "rgba(245, 158, 11, 0.2)";
+          const border = isActive ? "1px solid #f59e0b" : "1px solid transparent";
+          escaped = `<span style="background-color: ${bg}; border: ${border}; border-radius: 2px; box-shadow: 0 0 2px rgba(245, 158, 11, 0.3);">${escaped}</span>`;
+        }
+
+        html += escaped;
+      }
+
+      charIndex += val.length;
+      return `<span style="color:${color}">${html}</span>`;
     })
     .join("");
 }
-
-
 
 function getSelectionOffsets(element: HTMLElement): { start: number; end: number } {
   const sel = window.getSelection();
@@ -78,62 +132,133 @@ export default function EditorCore({
   code,
   onChange,
   undo,
+  redo,
   editorRef,
   saveCaretOffset,
   restoreCaretOffset,
   caretOffsetRef,
   placeholder = "Write your code here...",
+  activeLang,
+
+  completionsOpen,
+  completionsSelectNext,
+  completionsSelectPrev,
+  completionsClose,
+  completionsConfirm,
+  onTriggerCompletions,
+
+  searchQuery,
+  searchMatches,
+  activeMatchIndex,
 }: EditorCoreProps) {
   const tokens = useSyntaxHighlight(code);
-
 
   useLayoutEffect(() => {
     const el = editorRef.current;
     if (!el) return;
 
-    const nextHtml = tokensToHtml(tokens);
+    const nextHtml = tokensToHtml(tokens, searchMatches, activeMatchIndex);
 
-    // Skip DOM write when content hasn't changed (avoids unnecessary caret jumps)
     if (el.innerHTML === nextHtml) return;
 
     const isFocused = document.activeElement === el;
-
-    // Directly overwrite innerHTML — React never touches children of this div
     el.innerHTML = nextHtml;
 
-    // Restore caret to the saved character offset after we repainted
     if (isFocused) {
       restoreCaretOffset(el, caretOffsetRef.current);
     }
-  }, [tokens, editorRef, caretOffsetRef, restoreCaretOffset]);
+  }, [tokens, editorRef, caretOffsetRef, restoreCaretOffset, searchMatches, activeMatchIndex]);
 
+  // ─── Caret Coordinates measurement ──────────────────────────────
+  const getCaretCoordinates = (): { x: number; y: number; height: number } | null => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0).cloneRange();
 
+    let rect = range.getBoundingClientRect();
+
+    if (rect.left === 0 && rect.top === 0) {
+      const span = document.createElement("span");
+      span.appendChild(document.createTextNode("\u200b"));
+      range.insertNode(span);
+      rect = span.getBoundingClientRect();
+      span.parentNode?.removeChild(span);
+    }
+
+    return {
+      x: rect.left,
+      y: rect.top,
+      height: rect.height || 18,
+    };
+  };
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const element = e.currentTarget;
-    saveCaretOffset(element);
+    const offset = saveCaretOffset(element);
     const text = element.textContent || "";
     onChange(text);
+    onTriggerCompletions(text, offset, getCaretCoordinates);
   };
 
-  // ─── Selection change (arrow keys / mouse click) ────────────────
   const handleSelect = (e: React.SyntheticEvent<HTMLDivElement>) => {
     saveCaretOffset(e.currentTarget);
   };
 
-  // ─── KeyUp: re-save caret after ANY key (esp. arrow keys) ───────
   const handleKeyUp = (e: React.KeyboardEvent<HTMLDivElement>) => {
     saveCaretOffset(e.currentTarget);
   };
 
-  // ─── Key handling ───────────────────────────────────────────────
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const element = e.currentTarget;
+
+    // ── Autocomplete intercepts ───────────────────────────────────
+    if (completionsOpen) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        completionsSelectNext();
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        completionsSelectPrev();
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        completionsConfirm();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        completionsClose();
+        return;
+      }
+    }
 
     // ── Ctrl/Cmd + Z → Undo ──────────────────────────────────────
     if ((e.ctrlKey || e.metaKey) && e.key === "z") {
       e.preventDefault();
       undo();
+      completionsClose();
+      return;
+    }
+
+    // ── Ctrl/Cmd + Y / Ctrl+Shift+Z → Redo ────────────────────────
+    if (
+      ((e.ctrlKey || e.metaKey) && e.key === "y") ||
+      ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "Z")
+    ) {
+      e.preventDefault();
+      redo();
+      completionsClose();
+      return;
+    }
+
+    // ── Ctrl + Space → Trigger Autocomplete manually ──────────────
+    if ((e.ctrlKey || e.metaKey) && e.key === " ") {
+      e.preventDefault();
+      const offset = saveCaretOffset(element);
+      onTriggerCompletions(code, offset, getCaretCoordinates);
       return;
     }
 
@@ -154,6 +279,7 @@ export default function EditorCore({
       const newCode = code.slice(0, start) + insertText + code.slice(end);
       caretOffsetRef.current = start + insertText.length;
       onChange(newCode);
+      completionsClose();
       return;
     }
 
@@ -170,6 +296,7 @@ export default function EditorCore({
       const newCode = code.slice(0, start) + insertText + code.slice(end);
       caretOffsetRef.current = start + insertText.length;
       onChange(newCode);
+      completionsClose();
       return;
     }
 
@@ -179,14 +306,13 @@ export default function EditorCore({
       const { start, end } = getSelectionOffsets(element);
 
       if (start !== end) {
-        // Selection exists — delete the entire selected range
         const newCode = code.slice(0, start) + code.slice(end);
         caretOffsetRef.current = start;
         onChange(newCode);
+        onTriggerCompletions(newCode, start, getCaretCoordinates);
         return;
       }
 
-      // No selection: smart indent — delete 2 spaces on blank indented line
       const textBeforeCaret = code.slice(0, start);
       if (textBeforeCaret.endsWith("  ")) {
         const currentLine = textBeforeCaret.split("\n").pop() || "";
@@ -194,15 +320,18 @@ export default function EditorCore({
           const newCode = code.slice(0, start - 2) + code.slice(start);
           caretOffsetRef.current = start - 2;
           onChange(newCode);
+          onTriggerCompletions(newCode, start - 2, getCaretCoordinates);
           return;
         }
       }
 
-      // Regular backspace — delete one character before caret
       if (start > 0) {
         const newCode = code.slice(0, start - 1) + code.slice(start);
         caretOffsetRef.current = start - 1;
         onChange(newCode);
+        onTriggerCompletions(newCode, start - 1, getCaretCoordinates);
+      } else {
+        completionsClose();
       }
       return;
     }
@@ -213,24 +342,23 @@ export default function EditorCore({
       const { start, end } = getSelectionOffsets(element);
 
       if (start !== end) {
-        // Selection exists — delete the entire selected range
         const newCode = code.slice(0, start) + code.slice(end);
         caretOffsetRef.current = start;
         onChange(newCode);
+        onTriggerCompletions(newCode, start, getCaretCoordinates);
         return;
       }
 
-      // No selection — delete one character forward
       if (start < code.length) {
         const newCode = code.slice(0, start) + code.slice(start + 1);
         caretOffsetRef.current = start;
         onChange(newCode);
+        onTriggerCompletions(newCode, start, getCaretCoordinates);
       }
       return;
     }
   };
 
-  // ─── Paste: strip HTML, insert plain text at caret ──────────────
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     const text = e.clipboardData.getData("text/plain");
@@ -239,6 +367,7 @@ export default function EditorCore({
     const newCode = code.slice(0, start) + text + code.slice(end);
     caretOffsetRef.current = start + text.length;
     onChange(newCode);
+    completionsClose();
   };
 
   return (
@@ -254,6 +383,7 @@ export default function EditorCore({
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       onPaste={handlePaste}
+      onMouseDown={() => completionsClose()}
       data-placeholder={placeholder}
       className="editor-core-workspace"
       style={{
@@ -270,7 +400,6 @@ export default function EditorCore({
         minHeight: "100%",
         cursor: "text",
       }}
-
     />
   );
 }
