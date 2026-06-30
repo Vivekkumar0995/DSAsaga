@@ -49,6 +49,27 @@ const questionSchema = new Schema({
             default: "",
         }
     },
+    return_type: {
+        type: String,
+        default: "int"
+    },
+    return_type_cpp: {
+        type: String,
+    },
+    return_type_java: {
+        type: String,
+    },
+    return_type_c: {
+        type: String,
+    },
+    params: [
+        {
+            name: { type: String, required: true },
+            type: { type: String, required: true },
+            type_java: { type: String },
+            type_c: { type: String }
+        }
+    ],
     test_cases: [
         {
             input: {
@@ -68,6 +89,10 @@ const questionSchema = new Schema({
     xp:{
         type: Number,
         required: true,
+    },
+    reference_solution: {
+        type: String,
+        default: "",
     },
 }, { timestamps: true });
 

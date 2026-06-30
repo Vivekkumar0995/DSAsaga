@@ -10,14 +10,14 @@ export async function GET(req: NextRequest,context: {params: Params}) {
   try {
     await connectDB();
     const { slug } = await context.params;
-    const question = await Question.findOne({slug});
+    const question = await Question.findOne({slug}).lean();
     if (!question) {
       return NextResponse.json({success: false,message: "Question not found"},{ status: 404 });
     }
 
-    const previousQuestion = await Question.findOne({order: question.order - 1,data_structure_id: question.data_structure_id}).select("title slug order");
+    const previousQuestion = await Question.findOne({order: question.order - 1,data_structure_id: question.data_structure_id}).select("title slug order").lean();
 
-    const nextQuestion = await Question.findOne({order: question.order + 1,data_structure_id: question.data_structure_id}).select("title slug order");
+    const nextQuestion = await Question.findOne({order: question.order + 1,data_structure_id: question.data_structure_id}).select("title slug order").lean();
 
     return NextResponse.json({success: true,question,previousQuestion,nextQuestion});
   } 

@@ -1,50 +1,65 @@
 import { useState, useRef, useCallback } from "react";
 
+export interface HistoryFrame {
+  code: string;
+  caretOffset: number;
+}
+
 export function useEditorCore(initialCode: string = "") {
   const [code, setCodeRaw] = useState(initialCode);
   const editorRef = useRef<HTMLDivElement>(null);
   const caretOffsetRef = useRef<number>(0);
 
-
-  const historyRef = useRef<string[]>([initialCode]);
+  // Store objects of code and selection positions
+  const historyRef = useRef<HistoryFrame[]>([{ code: initialCode, caretOffset: 0 }]);
   const historyIndexRef = useRef<number>(0);
 
-
-
-  const setCode = useCallback((newCode: string) => {
+  // setCode updates code state and pushes new record to Undo/Redo stack
+  const setCode = useCallback((newCode: string, newCaretOffset?: number) => {
     setCodeRaw(newCode);
 
+    const resolvedOffset = newCaretOffset !== undefined ? newCaretOffset : caretOffsetRef.current;
     const history = historyRef.current;
     const idx = historyIndexRef.current;
 
-
+    // Prune forward (Redo) history on new typing action
     const trimmed = history.slice(0, idx + 1);
 
+    // If typing hasn't changed the actual code text, just update caret in current frame
+    if (trimmed.length > 0 && trimmed[trimmed.length - 1].code === newCode) {
+      trimmed[trimmed.length - 1].caretOffset = resolvedOffset;
+      historyRef.current = trimmed;
+      return;
+    }
 
-    if (trimmed[trimmed.length - 1] === newCode) return;
+    trimmed.push({ code: newCode, caretOffset: resolvedOffset });
 
-    trimmed.push(newCode);
-
-
-    if (trimmed.length > 200) trimmed.shift();
+    // Restrict history stack size to 200 elements
+    if (trimmed.length > 200) {
+      trimmed.shift();
+    }
 
     historyRef.current = trimmed;
     historyIndexRef.current = trimmed.length - 1;
   }, []);
 
-
-
-
-  const undo = useCallback(() => {
-    if (historyIndexRef.current <= 0) return;
+  const undo = useCallback((): number | null => {
+    if (historyIndexRef.current <= 0) return null;
     historyIndexRef.current -= 1;
-    const restored = historyRef.current[historyIndexRef.current];
-    setCodeRaw(restored); // setCodeRaw to avoid pushing to history again
-    // Move caret to end of restored code (safe fallback)
-    caretOffsetRef.current = Math.min(caretOffsetRef.current, restored.length);
+    const frame = historyRef.current[historyIndexRef.current];
+    setCodeRaw(frame.code);
+    caretOffsetRef.current = frame.caretOffset;
+    return frame.caretOffset;
   }, []);
 
-
+  const redo = useCallback((): number | null => {
+    if (historyIndexRef.current >= historyRef.current.length - 1) return null;
+    historyIndexRef.current += 1;
+    const frame = historyRef.current[historyIndexRef.current];
+    setCodeRaw(frame.code);
+    caretOffsetRef.current = frame.caretOffset;
+    return frame.caretOffset;
+  }, []);
 
   const saveCaretOffset = useCallback((element: HTMLElement): number => {
     const sel = window.getSelection();
@@ -58,7 +73,6 @@ export function useEditorCore(initialCode: string = "") {
       if (found) return;
 
       if (node.nodeType === Node.TEXT_NODE) {
-        // If the caret is inside this text node
         if (node === range.startContainer) {
           offset += range.startOffset;
           found = true;
@@ -66,10 +80,7 @@ export function useEditorCore(initialCode: string = "") {
         }
         offset += node.textContent?.length ?? 0;
       } else {
-        // If the caret is on an element node (e.g. at the very start/end)
         if (node === range.startContainer) {
-          // range.startOffset is a child index, not a character index.
-          // Count chars of children up to that index.
           for (let i = 0; i < range.startOffset; i++) {
             offset += node.childNodes[i]?.textContent?.length ?? 0;
           }
@@ -88,10 +99,6 @@ export function useEditorCore(initialCode: string = "") {
     return offset;
   }, []);
 
-  /**
-   * Walk the DOM tree of `element` and position the caret at the character
-   * offset `offset` from the start of the element's text content.
-   */
   const restoreCaretOffset = useCallback(
     (element: HTMLElement, offset: number) => {
       const sel = window.getSelection();
@@ -109,7 +116,6 @@ export function useEditorCore(initialCode: string = "") {
         if (node.nodeType === Node.TEXT_NODE) {
           const len = node.textContent?.length ?? 0;
           if (remaining <= len) {
-            // Caret sits inside this text node
             targetNode = node;
             targetOffset = remaining;
             found = true;
@@ -126,7 +132,6 @@ export function useEditorCore(initialCode: string = "") {
 
       traverse(element);
 
-      // Fallback: place caret at end of last text node
       if (!targetNode) {
         const findLast = (node: Node): Node | null => {
           if (node.nodeType === Node.TEXT_NODE) return node;
@@ -147,7 +152,7 @@ export function useEditorCore(initialCode: string = "") {
         sel.removeAllRanges();
         sel.addRange(range);
       } catch (e) {
-        console.warn("restoreCaretOffset: failed to place caret:", e);
+        console.warn("restoreCaretOffset failed:", e);
       }
     },
     []
@@ -157,6 +162,7 @@ export function useEditorCore(initialCode: string = "") {
     code,
     setCode,
     undo,
+    redo,
     editorRef,
     caretOffsetRef,
     saveCaretOffset,
