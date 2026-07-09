@@ -9,9 +9,17 @@ import LeaderboardModel from "@/models/leaderboard_model";
 import { redis } from "@/lib/redis";
 import crypto from "crypto";
 import { rateLimit, getClientIP } from "@/lib/rateLimit";
+import { createSession } from "@/lib/session";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const oauthClient = new OAuth2Client(CLIENT_ID);
+
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+);
 
 async function extractCredentialFromRequest(req: Request): Promise<{ credential: string | null; next: string | null }> {
   const url = new URL(req.url);
@@ -122,13 +130,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!user.profileImage && payload.picture) user.profileImage = payload.picture;
+    if (!user.displayName && payload.name) user.displayName = payload.name;
+    
+    const role = ADMIN_EMAILS.has(email) ? 'admin' : (user.role ?? 'user');
+    if (user.role !== role) {
+      user.role = role;
+    }
+
     user.lastLoginAt = new Date();
     await user.save();
 
     const userId = user._id.toString();
 
+    const sessionId = await createSession(userId, "google");
+
     // Issue server JWT cookie (same as regular login)
-    const token = await encrypt({ userId }, "7d");
+    const token = await encrypt({ userId, role, sessionId }, "7d");
     const response = NextResponse.json(
       {message:"Google login successful", name:user.name},{status:201})
 

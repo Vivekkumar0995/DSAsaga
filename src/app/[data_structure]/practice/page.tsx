@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { decrypt } from "@/lib/jose_auth";
 import PracticeClient from "@/components/data_structure/practice/PracticeClient";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 type Props = {
   params: Promise<{
@@ -24,23 +25,7 @@ export default async function PracticePage({ params }: Props) {
     const dsDoc = await DataStructureModel.findOne({ slug: lowerSlug }).lean() as any;
 
     if (!dsDoc) {
-      return (
-        <div className="min-h-screen bg-white flex flex-col items-center justify-center text-center px-4">
-          <div className="text-6xl mb-4">🚧</div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 capitalize">
-            {data_structure.replace(/-/g, " ")}
-          </h1>
-          <p className="text-gray-500 text-lg mb-6">
-            This data structure hasn&apos;t been added yet.
-          </p>
-          <Link
-            href="/admin/data-structure"
-            className="px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors"
-          >
-            Add it via Admin Panel →
-          </Link>
-        </div>
-      );
+      notFound();
     }
 
     // Fetch questions from MongoDB

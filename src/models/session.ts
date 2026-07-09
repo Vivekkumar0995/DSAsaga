@@ -1,20 +1,36 @@
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
-const sessionSchema = new mongoose.Schema({
-    userId: {
-        type: String,
-        required: true
+const sessionSchema = new mongoose.Schema(
+  {
+    sessionId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
     },
-    validTill: {
-        type: Date,
-        required: true,
-        default: Date.now()
+    userId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
     },
     type: {
-        type: String,
-        rquired: true
-    }
-}, { timestamps: true});
+      type: String,
+      required: true,
+      enum: ["credentials", "google", "otp"],
+      default: "credentials",
+    },
+  },
+  { timestamps: true }
+);
 
-const Session = mongoose.models.session || mongoose.model("session", sessionSchema);
+
+sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+const Session =
+  mongoose.models.session || mongoose.model("session", sessionSchema);
+
 export default Session;

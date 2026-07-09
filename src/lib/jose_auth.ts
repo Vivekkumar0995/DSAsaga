@@ -1,22 +1,38 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-const key = new TextEncoder().encode(process.env.SECRET!);
+const secret = process.env.SECRET;
+
+if (!secret) {
+  throw new Error(
+    '[jose_auth] Missing required environment variable: SECRET. ' +
+    'Add it to your .env.local file.',
+  );
+}
+
+const key = new TextEncoder().encode(secret);
 
 export async function decrypt(session: string) {
   try {
-    const verified = await jwtVerify(session, key);
-    return verified.payload;
-  } catch (err) {
+    const { payload } = await jwtVerify(session, key);
+    return payload;
+  } catch {
+
     return null;
   }
 }
 
-export async function encrypt(payload: any, expirationTime: string | number | Date) {
-  // Implementation for encrypting session tokens
-    const token = await new SignJWT(payload)
-      .setProtectedHeader({ alg: 'HS256' }) // You must explicitly set the algorithm
-      .setIssuedAt()
-      .setExpirationTime(expirationTime)
-      .sign(key);
-    return token;
+/**
+ * Signs a new JWT with the given payload and expiration time.
+ * @param payload     - Data to embed in the token.
+ * @param expiresIn   - Expiry as a string (e.g. '7d', '2h') or Unix timestamp.
+ */
+export async function encrypt(
+  payload: Record<string, unknown>,
+  expiresIn: string | number | Date,
+): Promise<string> {
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(expiresIn)
+    .sign(key);
 }

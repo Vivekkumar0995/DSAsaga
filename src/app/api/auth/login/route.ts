@@ -7,6 +7,15 @@ import { encrypt } from "@/lib/jose_auth";
 import { redis } from "@/lib/redis";
 import crypto from "crypto";
 import { rateLimit, getClientIP } from "@/lib/rateLimit";
+import { createSession } from "@/lib/session";
+
+// Emails that are automatically granted admin access (set in .env.local, with hardcoded fallback)
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+);
 
 export async function POST(req :NextRequest){
   try{
@@ -42,7 +51,9 @@ export async function POST(req :NextRequest){
       return NextResponse.json({message:"Invalid Credentials"},{status:400})
     }
 
-    if(!user.isAccountVerified){
+    const isAdminEmail = ADMIN_EMAILS.has(normalizedEmail);
+
+    if(!user.isAccountVerified && !isAdminEmail){
       const otp = crypto.randomInt(100000, 999999).toString(); // Case 3 Fix
       // Case 4 Fix: Store OTP in Redis instead of MongoDB
       await redis.set(`otp:${normalizedEmail}:verification`, otp, { ex: 300 });
@@ -71,13 +82,20 @@ export async function POST(req :NextRequest){
       return NextResponse.json({message:"Wrong password"},{status:400})
     }
 
+    const role = ADMIN_EMAILS.has(normalizedEmail) ? 'admin' : (user.role ?? 'user');
+    
     user.lastLoginAt = new Date();
+    if (user.role !== role) {
+      user.role = role;
+    }
     await user.save();
 
     const userId = user._id.toString();
 
+    const sessionId = await createSession(userId, "credentials");
+
     const token = await encrypt(
-      {userId},
+      { userId, role, sessionId },
       '7d'
     );
 
