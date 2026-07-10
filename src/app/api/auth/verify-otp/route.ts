@@ -4,6 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { encrypt, decrypt } from "@/lib/jose_auth";
 import { redis } from "@/lib/redis";
 import { rateLimit, getClientIP } from "@/lib/rateLimit";
+import { createSession } from "@/lib/session";
+
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+);
 
 export async function POST(req: NextRequest) {
   try {
@@ -88,9 +96,17 @@ export async function POST(req: NextRequest) {
     // Handle each flow
     if (forWhat === "verify-and-signup") {
       user.isAccountVerified = true;
+
+      const role = ADMIN_EMAILS.has(email) ? 'admin' : (user.role ?? 'user');
+      if (user.role !== role) {
+        user.role = role;
+      }
+
       await user.save();
 
-      const token = await encrypt({ userId: user._id.toString() }, "7d");
+      const sessionId = await createSession(user._id.toString(), "otp");
+
+      const token = await encrypt({ userId: user._id.toString(), role, sessionId }, "7d");
       const response = NextResponse.json(
         { message: "Account verified. Successfully signed up", name: user.name },
         { status: 201 }
