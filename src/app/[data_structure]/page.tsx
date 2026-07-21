@@ -2,6 +2,7 @@ import { BattleArenaSection } from "@/components/data_structure/Battle";
 import { LearningHubSection } from "@/components/data_structure/Learn";
 import { CommunitySection } from "@/components/data_structure/Community";
 import { getDataStructure } from "@/lib/mongodb";
+import { notFound } from "next/navigation";
 
 export default async function DataStructurePage({
   params,
@@ -10,28 +11,10 @@ export default async function DataStructurePage({
 }) {
   const { data_structure } = await params;
 
-  // Fetch this data structure's content from MongoDB
   const dsData = await getDataStructure(data_structure);
 
-  // If not found in DB yet, show a "Coming Soon" message
   if (!dsData) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-center px-4">
-        <div className="text-6xl mb-4">🚧</div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 capitalize">
-          {data_structure.replace(/-/g, " ")}
-        </h1>
-        <p className="text-gray-500 text-lg mb-6">
-          This data structure hasn&apos;t been added yet.
-        </p>
-        <a
-          href="/admin/data-structure"
-          className="px-5 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors"
-        >
-          Add it via Admin Panel →
-        </a>
-      </div>
-    );
+    notFound();
   }
 
   return (
