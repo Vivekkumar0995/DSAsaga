@@ -1,16 +1,6 @@
 import BattleClient from "@/components/data_structure/battle/BattleClient";
-
-async function getDataStructure(slug: string) {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/data-structure/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
-}
+import { getDataStructure } from "@/lib/mongodb";
+import { DataStructureType } from "@/models/data_structure_model";
 
 export default async function BattlePage({
   params,
@@ -18,7 +8,7 @@ export default async function BattlePage({
   params: Promise<{ data_structure: string }>;
 }) {
   const { data_structure } = await params;
-  const dsData = await getDataStructure(data_structure);
+  const dsData: DataStructureType | null = await getDataStructure(data_structure);
 
   if (!dsData) {
     return (
@@ -49,4 +39,4 @@ export default async function BattlePage({
       recent_matches={recent_matches}
     />
   );
-}
+}

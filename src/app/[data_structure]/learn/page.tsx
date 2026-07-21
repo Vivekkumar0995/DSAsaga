@@ -1,16 +1,5 @@
 import LearnClient from "@/components/data_structure/learn/LearnClient";
-
-async function getDataStructure(slug: string) {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/data-structure/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
-}
+import { getDataStructure } from "@/lib/mongodb";
 
 export default async function LearnPage({
   params,
@@ -44,4 +33,4 @@ export default async function LearnPage({
       learning_stats={[]} // user-specific stats — to be built later
     />
   );
-}
+}

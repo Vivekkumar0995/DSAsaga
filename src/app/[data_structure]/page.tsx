@@ -1,22 +1,7 @@
 import { BattleArenaSection } from "@/components/data_structure/Battle";
 import { LearningHubSection } from "@/components/data_structure/Learn";
 import { CommunitySection } from "@/components/data_structure/Community";
-
-// Fetch data structure content from our API (which reads from MongoDB)
-async function getDataStructure(slug: string) {
-  try {
-    // Use absolute URL for server-side fetch in Next.js
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/data-structure/${slug}`, {
-      cache: "no-store", // always fetch fresh from DB
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
-}
+import { getDataStructure } from "@/lib/mongodb";
 
 export default async function DataStructurePage({
   params,

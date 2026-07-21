@@ -9,10 +9,10 @@
     "start": "next start",
     "lint": "eslint"
   },
-  "packageManager": "pnpm@11.1.2",
+  "packageManager": "pnpm@11.10.0",
   "engines": {
     "node": ">=20.0.0",
-    "pnpm": "11.1.2"
+    "pnpm": "11.10.0"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.4",

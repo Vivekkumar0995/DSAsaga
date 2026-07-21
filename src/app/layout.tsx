@@ -8,8 +8,6 @@ import {Providers} from "@/components/heroUI/providers";
 import { Toaster } from 'react-hot-toast';
 import { decrypt } from "@/lib/jose_auth";
 import Script from 'next/script'
-import AppSidebar from "@/components/ui/AppSidebar";
-import ClientLayoutWrapper from "@/components/ui/ClientLayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
