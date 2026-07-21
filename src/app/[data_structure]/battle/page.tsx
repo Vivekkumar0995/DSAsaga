@@ -1,6 +1,7 @@
 import BattleClient from "@/components/data_structure/battle/BattleClient";
 import { getDataStructure } from "@/lib/mongodb";
 import { DataStructureType } from "@/models/data_structure_model";
+import { notFound } from "next/navigation";
 
 export default async function BattlePage({
   params,
@@ -8,7 +9,7 @@ export default async function BattlePage({
   params: Promise<{ data_structure: string }>;
 }) {
   const { data_structure } = await params;
-  const dsData = await getDataStructure(data_structure);
+  const dsData: DataStructureType | null = await getDataStructure(data_structure);
 
   if (!dsData) {
     notFound();

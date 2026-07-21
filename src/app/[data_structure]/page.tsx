@@ -3,6 +3,7 @@ import { LearningHubSection } from "@/components/data_structure/Learn";
 import { CommunitySection } from "@/components/data_structure/Community";
 import { getDataStructure } from "@/lib/mongodb";
 import { notFound } from "next/navigation";
+import { DataStructureType } from "@/models/data_structure_model";
 
 export default async function DataStructurePage({
   params,
@@ -11,7 +12,7 @@ export default async function DataStructurePage({
 }) {
   const { data_structure } = await params;
 
-  const dsData = await getDataStructure(data_structure);
+  const dsData: DataStructureType | null = await getDataStructure(data_structure);
 
   if (!dsData) {
     notFound();
