@@ -1,21 +1,8 @@
 import { BattleArenaSection } from "@/components/data_structure/Battle";
 import { LearningHubSection } from "@/components/data_structure/Learn";
 import { CommunitySection } from "@/components/data_structure/Community";
+import { getDataStructure } from "@/lib/mongodb";
 import { notFound } from "next/navigation";
-
-async function getDataStructure(slug: string) {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/data-structure/${slug}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
-}
 
 export default async function DataStructurePage({
   params,

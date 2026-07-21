@@ -1,5 +1,5 @@
-import connectDB from "@/lib/mongodb";
-import DataStructureModel from "@/models/data_structure_model";
+import { getDataStructure } from "@/lib/mongodb";
+import { DataStructureType } from "@/models/data_structure_model";
 import Question from "@/models/question_model";
 import SolvedQuestion from "@/models/SolvedQuestion";
 import { cookies } from "next/headers";
@@ -19,10 +19,8 @@ export default async function PracticePage({ params }: Props) {
   const lowerSlug = data_structure.toLowerCase();
 
   try {
-    await connectDB();
-
     // Fetch data structure metadata
-    const dsDoc = await DataStructureModel.findOne({ slug: lowerSlug }).lean() as any;
+    const dsDoc: DataStructureType | null = await getDataStructure(data_structure);
 
     if (!dsDoc) {
       notFound();

@@ -11,7 +11,7 @@ export type learning_track = {
     // color: "from-green-500 to-emerald-500"
 }
 
-type battle_mode = {
+export type battle_mode = {
     icon: string,
     title: string,
     description: string,
@@ -19,27 +19,27 @@ type battle_mode = {
     color: string
 }
 
-type testimonial = {
+export type testimonial = {
     name: string,
     avatar: string,
     role: string,
     content: string,
 }
 
-type activity = {
+export type activity = {
     user_name: string,
     action: string,
     time: string
 }
 
-type battle_stats = {
+export type battle_stats = {
     rating: number,
     win_rate: number,
     battles: number,
     win_streak: number
 }
 
-type match = {
+export type match = {
     opponent_user_name: string,
     problem: string,
     rating_change: number,
@@ -47,7 +47,7 @@ type match = {
     result: string
 }
 
-type lesson_stats = {
+export type lesson_stats = {
     title: string,
     completed: Boolean,
     in_progress: Boolean
@@ -60,7 +60,7 @@ export type learning_stats = {
     lesson_stats: lesson_stats[]
 }
 
-type problems = {
+export type problems = {
     id: number,
     title: string,
     difficulty: string,
@@ -69,7 +69,7 @@ type problems = {
     time: string
 }
 
-type problem_stats = {
+export type problem_stats = {
     id: number,
     solved: Boolean,
     attempted: Boolean,
