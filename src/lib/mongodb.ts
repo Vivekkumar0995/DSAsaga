@@ -1,6 +1,7 @@
 import { DataStructureType } from '@/models/data_structure_model';
 import mongoose from 'mongoose';
-
+import dns from "node:dns/promises";
+console.log(await dns.getServers());
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
@@ -29,7 +30,7 @@ export default async function connectDB() {
       return mongooseInstance;
     });
   }
-  
+
   cached.conn = await cached.promise;
   return cached.conn;
 }
