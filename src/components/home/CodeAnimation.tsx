@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 interface CodeAnimationProps {
   user?: {
@@ -97,10 +97,13 @@ const tokenizeLine = (line: string): Token[] => {
   return tokens;
 };
 
+// Fixed, steady per-character delay instead of an oscillating formula.
+// The old (typeSpeed + ((typedLength * 7) % 24) - 8) pattern made the
+// cadence lurch every few characters, which read as "fuzzy" typing.
 const TypewriterText = ({
   strings,
-  typeSpeed = 26,
-  linePause = 220,
+  typeSpeed = 22,
+  linePause = 260,
   resetDelay = 1800,
   loop = true,
   className,
@@ -127,7 +130,7 @@ const TypewriterText = ({
     if (typedLength < currentLine.length) {
       const charTimer = window.setTimeout(
         () => setTypedLength((prev) => prev + 1),
-        Math.max(12, typeSpeed + Math.floor(((typedLength * 7) % 24)) - 8)
+        typeSpeed
       );
 
       return () => window.clearTimeout(charTimer);
@@ -166,14 +169,14 @@ const TypewriterText = ({
               {index + 1}
             </span>
 
-            <span className="inline-block min-h-[1.25rem]">
+            <span className="inline-block min-h-5">
               {tokens.map((token, tokenIndex) => (
                 <span key={`${index}-${tokenIndex}-${token.text}`} className={token.className}>
                   {token.text}
                 </span>
               ))}
 
-              {isActive && <span className="editor-caret ml-[1px]" />}
+              {isActive && <span className="editor-caret ml-px" />}
             </span>
           </div>
         );
@@ -184,7 +187,7 @@ const TypewriterText = ({
 
 const codeSnippets = {
   quickSort: {
-    name: "quickSort.js",
+    name: "Quick sort",
     code: [
       "function quickSort(arr) {",
       "  if (arr.length <= 1) return arr;",
@@ -206,7 +209,7 @@ const codeSnippets = {
     ],
   },
   binarySearch: {
-    name: "binarySearch.js",
+    name: "Binary search",
     code: [
       "function binarySearch(arr, target) {",
       "  let left = 0, right = arr.length - 1;",
@@ -225,7 +228,7 @@ const codeSnippets = {
     ],
   },
   insertionSort: {
-    name: "insertionSort.js",
+    name: "Insertion sort",
     code: [
       "function insertionSort(arr) {",
       "  for (let i = 1; i < arr.length; i++) {",
@@ -263,13 +266,17 @@ const CodeAnimation = ({ }: CodeAnimationProps) => {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`editor-frame relative rounded-2xl p-[1px] transition-all duration-500 w-full max-w-3xl overflow-hidden ${
+      className={`editor-shell relative rounded-2xl w-full max-w-3xl transition-all duration-500 ${
         hovered
-          ? "shadow-[0_26px_52px_-30px_rgba(7,18,35,0.78)]"
+          ? "shadow-[0_26px_60px_-28px_rgba(79,156,238,0.35)]"
           : "shadow-[0_16px_34px_-28px_rgba(7,18,35,0.62)]"
-      }`}
+      } ${hovered ? "is-hovered" : ""}`}
     >
-      <div className="relative bg-[#1E1E1E]/95 rounded-2xl p-0 border border-[#2D2D2D] editor-shell">
+      {/* Animated ring that circles the border. Rendered as a real element
+          (not a phantom padding trick) so it can't leave a stray edge. */}
+      <div className="editor-ring rounded-2xl" aria-hidden="true" />
+
+      <div className="relative bg-[#1E1E1E] rounded-2xl border border-[#2D2D2D] overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-50 bg-[radial-gradient(circle_at_15%_15%,rgba(255,255,255,0.08),transparent_35%),radial-gradient(circle_at_85%_10%,rgba(95,185,255,0.10),transparent_30%)]" />
 
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4 border-b border-[#2A2A2A] bg-[#252526]/95 rounded-t-2xl">
@@ -287,7 +294,7 @@ const CodeAnimation = ({ }: CodeAnimationProps) => {
               <button
                 key={key}
                 onClick={() => handleManualClick(index)}
-                className={`cursor-pointer text-[11px] sm:text-xs px-3 py-1.5 rounded-md font-semibold transition-all duration-300 border ${
+                className={`cursor-pointer text-[11px] sm:text-xs px-3 py-1.5 rounded-md transition-all duration-300 border ${
                   currentSnippetIndex === index
                     ? "bg-[#37373D] border-[#4F9CEE] text-[#E8F3FF] shadow-[0_0_0_1px_rgba(79,156,238,0.35)]"
                     : "bg-[#2D2D30] border-[#3E3E42] text-[#B8C0CC] hover:bg-[#3A3A40]"
@@ -299,36 +306,73 @@ const CodeAnimation = ({ }: CodeAnimationProps) => {
           </div>
         </div>
 
-        <div className="editor-scrollbar relative h-[360px] sm:h-[400px] min-h-[360px] sm:min-h-[400px] bg-[#1E1E1E] rounded-b-2xl border-t border-[#121212]/50 px-3 sm:px-4 py-4 sm:py-5 text-xs sm:text-sm font-mono overflow-x-auto overflow-y-auto">
+        <div className="editor-scrollbar relative h-90 sm:h-100 min-h-90 sm:min-h-100 bg-[#1E1E1E] rounded-b-2xl border-t border-[#121212]/50 px-3 sm:px-4 py-4 sm:py-5 text-xs sm:text-sm font-mono overflow-x-auto overflow-y-auto">
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_bottom,rgba(255,255,255,0.02)_0%,transparent_12%,transparent_88%,rgba(255,255,255,0.02)_100%)]" />
 
           <div className="relative flex-1 flex flex-col">
             <TypewriterText
               key={`${currentCode.name}-${rerunKey}`}
               strings={currentCode.code}
-              typeSpeed={24}
-              linePause={170}
+              typeSpeed={22}
+              linePause={220}
               resetDelay={1650}
               loop={false}
-              className="font-mono whitespace-pre break-words"
+              className="font-mono whitespace-pre wrap-break-word"
             />
           </div>
         </div>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .editor-frame {
-          background: linear-gradient(
-            132deg,
-            rgba(17, 110, 157, 0.95) 0%,
-            rgba(6, 48, 94, 0.95) 26%,
-            rgba(46, 88, 52, 0.88) 65%,
-            rgba(97, 67, 40, 0.9) 100%
-          );
+        @property --editor-angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
         }
 
         .editor-shell {
-          animation: shellFloat 5.6s ease-in-out infinite;
+          animation: shellFloat 6s ease-in-out infinite;
+        }
+
+        /* Ring lives as its own absolutely-positioned layer that sits
+           BEHIND the panel and only shows through a fixed-width band,
+           carved out with mask-composite: exclude. This is what gives
+           a clean rotating outline instead of a blurry glow or a
+           stray sliver of default border color. */
+        .editor-ring {
+          position: absolute;
+          inset: 0;
+          padding: 1.5px;
+          background: conic-gradient(
+            from var(--editor-angle),
+            #4f9cee,
+            #4ec9b0,
+            #c586c0,
+            #4fc1ff,
+            #4f9cee
+          );
+          -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+          mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+          mask-composite: exclude;
+          animation: editorRingSpin 5s linear infinite;
+          opacity: 0.75;
+          transition: opacity 0.4s ease;
+          pointer-events: none;
+        }
+
+        .editor-shell.is-hovered .editor-ring {
+          opacity: 1;
+        }
+
+        @keyframes editorRingSpin {
+          to {
+            --editor-angle: 360deg;
+          }
         }
 
         .editor-scrollbar {
@@ -357,11 +401,21 @@ const CodeAnimation = ({ }: CodeAnimationProps) => {
 
         .editor-caret {
           display: inline-block;
-          width: 8px;
-          height: 1.05rem;
+          width: 2px;
+          height: 1.1rem;
           background: linear-gradient(180deg, #9cdcfe, #4fc1ff);
           vertical-align: text-bottom;
           border-radius: 2px;
+          animation: caretBlink 1s steps(1) infinite;
+        }
+
+        @keyframes caretBlink {
+          0%, 49% {
+            opacity: 1;
+          }
+          50%, 100% {
+            opacity: 0;
+          }
         }
 
         .code-line {
@@ -369,12 +423,26 @@ const CodeAnimation = ({ }: CodeAnimationProps) => {
         }
 
         @keyframes shellFloat {
-          0%,
-          100% {
+          0% {
             transform: translateY(0px);
           }
           50% {
-            transform: translateY(-4px);
+            transform: translateY(-6px);
+          }
+          100% {
+            transform: translateY(0px);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .editor-shell {
+            animation: none;
+          }
+          .editor-ring {
+            animation: none;
+          }
+          .editor-caret {
+            animation: none;
           }
         }
       `}} />
