@@ -213,6 +213,9 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0
     devDependencies:
+      '@next/swc-win32-x64-msvc':
+        specifier: 16.2.10
+        version: 16.2.10
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
@@ -7642,8 +7645,7 @@ snapshots:
   '@next/swc-win32-arm64-msvc@16.2.10':
     optional: true
 
-  '@next/swc-win32-x64-msvc@16.2.10':
-    optional: true
+  '@next/swc-win32-x64-msvc@16.2.10': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
