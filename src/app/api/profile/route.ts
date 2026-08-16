@@ -179,7 +179,7 @@ export async function PUT(req: NextRequest) {
     const updatedUser = await UserModel.findOneAndUpdate(
       { _id: userId },
       { $set: updateData },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!updatedUser) {
