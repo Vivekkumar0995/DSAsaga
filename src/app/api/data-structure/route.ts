@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         testimonials:    testimonials    ?? [],
         live_activity:   live_activity   ?? [],
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     return NextResponse.json(

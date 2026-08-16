@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
           slug: question.slug.toLowerCase().trim(),
         },
       },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
 
     return NextResponse.json({
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest) {
     const updated = await Question.findOneAndUpdate(
       { slug: slug.toLowerCase().trim() },
       { $set: { reference_solution } },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
