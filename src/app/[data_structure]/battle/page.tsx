@@ -22,7 +22,7 @@ export default async function BattlePage({
     <BattleClient
       ds_param={data_structure}
       battle_stats={stats}
-      battle_modes={dsData.battle_modes}
+      battle_modes={dsData?.battle_modes || []}
       recent_matches={recent_matches}
     />
   );
