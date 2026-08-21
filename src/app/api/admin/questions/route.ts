@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
           slug: question.slug.toLowerCase().trim(),
         },
       },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
 
     return NextResponse.json({

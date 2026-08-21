@@ -5,13 +5,6 @@ import { usePathname } from 'next/navigation'
 import { Home, BookOpen, Swords, GraduationCap, Trophy } from 'lucide-react'
 import { snakeToTitleCase } from '@/lib/utils'
 
-type AuthUser = {
-  userId?: string;
-} | null;
-
-type SidebarProps = {
-  initialUser: AuthUser;
-};
 
 const navItems = [
   { href: '/', icon: Home, label: 'Home' },
@@ -19,10 +12,9 @@ const navItems = [
   { href: '/practice', icon: BookOpen, label: 'Practice' },
   { href: '/battle', icon: Swords, label: 'Battle' },
   { href: '/main/leaderboard', icon: Trophy, label: 'Leaderboard' },
-  { href: '/main/profile', icon: Home, label: 'Profile' },
 ]
 
-export default function Sidebar({ initialUser }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname()
   const pathParts = pathname.split('/').filter(Boolean)
   const currentTopic = pathParts[0] || ''
@@ -40,7 +32,7 @@ export default function Sidebar({ initialUser }: SidebarProps) {
           }
         }
 
-        if (item.href === '/main/profile' || item.href === '/main/leaderboard') {
+        if (item.href === '/main/leaderboard') {
           return item
         }
 
@@ -55,16 +47,14 @@ export default function Sidebar({ initialUser }: SidebarProps) {
     <aside className="w-64 border-r border-[#E5E7EB] bg-white hidden lg:flex flex-col relative shrink-0">
       <div className="sticky top-28 h-[calc(100vh-7rem)] flex flex-col overflow-y-auto">
         {/* Logo */}
-        <div className="px-6 py-5 border-b border-[#E5E7EB]">
-        <Link href="/" className="flex items-center gap-2.5">
+        <div className="px-6 py-5 border-b border-[#E5E7EB] flex items-center gap-2.5">
           <div className="w-8 h-8 bg-[#10B981] rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">
               {topicName ? topicName.charAt(0) : 'S'}
             </span>
           </div>
           <span className="font-bold text-[#111827] text-base">{topicName || 'DSA Saga'}</span>
-        </Link>
-      </div>
+        </div>
 
       {/* Season badge */}
       <div className="px-6 py-3 border-b border-[#E5E7EB]">
@@ -95,20 +85,6 @@ export default function Sidebar({ initialUser }: SidebarProps) {
         })}
       </nav>
 
-      {/* User card */}
-      <div className="px-6 py-4 border-t border-[#E5E7EB]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#10B981] flex items-center justify-center text-white text-sm font-bold uppercase">
-            {initialUser?.userId ? 'U' : 'G'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#111827] truncate">
-              {initialUser?.userId ? 'Signed in' : 'Guest'}
-            </p>
-            <p className="text-xs text-[#6B7280]">{initialUser?.userId ? 'Account connected' : 'Not signed in'}</p>
-          </div>
-        </div>
-      </div>
       </div>
     </aside>
   )
