@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest) {
     const updated = await Question.findOneAndUpdate(
       { slug: slug.toLowerCase().trim() },
       { $set: updateFields },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!updated) {
