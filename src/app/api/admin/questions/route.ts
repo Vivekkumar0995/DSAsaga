@@ -98,8 +98,8 @@ export async function PATCH(req: NextRequest) {
 
     const updated = await Question.findOneAndUpdate(
       { slug: slug.toLowerCase().trim() },
-      { $set: { reference_solution } },
-      { returnDocument: 'after' }
+      { $set: updateFields},
+      { returnDocument: "after" }
     );
 
     if (!updated) {
