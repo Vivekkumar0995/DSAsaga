@@ -5,14 +5,32 @@ import { awardQuestionCompletion } from "@/services/progress.service";
 import connectDB from "@/lib/mongodb";
 import Question from "@/models/question_model";
 import Submission from "@/models/submission_model";
+import { executeCode } from "@/lib/sandbox/SandboxManager";
 import mongoose from "mongoose";
+
+function normalizeOutput(val: string | null | undefined): string {
+  if (val == null) return "";
+  const s = String(val).trim();
+  if (!s) return "";
+
+  try {
+    const parsed = JSON.parse(s);
+    return JSON.stringify(parsed);
+  } catch {
+    return s
+      .replace(/\r\n/g, "\n")
+      .replace(/\s+/g, " ")
+      .replace(/\s*([,\[\]\{\}:])\s*/g, "$1")
+      .trim();
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
 
     const body = await req.json().catch(() => ({}));
-    const { questionSlug, code, language, verdict, passed, total } = body;
+    const { questionSlug, code, language } = body;
 
     if (!questionSlug) {
       return NextResponse.json(
@@ -49,20 +67,72 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Save the submission details
+    const testCases = question.test_cases || [];
+    if (!testCases.length) {
+      return NextResponse.json(
+        { success: false, message: "No test cases found for this question" },
+        { status: 400 }
+      );
+    }
+
+    let passed = 0;
+    const total = testCases.length;
+    let computedVerdict = "Accepted";
+    const logs: string[] = [];
+
+    // Secure server-side execution of all test cases (public + hidden)
+    for (let i = 0; i < total; i++) {
+      const tc = testCases[i];
+      const execResult = await executeCode(language || "javascript", code || "", tc.input, question);
+
+      if (execResult.errorType) {
+        computedVerdict = execResult.errorType;
+        if (tc.is_hidden) {
+          logs.push(`Testcase ${i + 1}/${total} (Hidden): ${execResult.errorType}`);
+        } else {
+          logs.push(`Testcase ${i + 1}/${total} (Sample): ${execResult.errorType}`);
+          if (execResult.stderr) logs.push(`   ${execResult.stderr}`);
+        }
+        break;
+      }
+
+      const actualOutput = execResult.stdout ? execResult.stdout.trim() : "";
+      const expectedOutput = tc.output ? tc.output.trim() : "";
+
+      if (normalizeOutput(actualOutput) === normalizeOutput(expectedOutput)) {
+        passed++;
+      } else {
+        computedVerdict = "Wrong Answer";
+        if (tc.is_hidden) {
+          logs.push(`❌ Failed on Hidden Testcase ${i + 1}/${total}`);
+          logs.push(`   Input & expected output are hidden for security.`);
+        } else {
+          logs.push(`❌ Failed on Sample Testcase ${i + 1}/${total}`);
+          logs.push(`   Input:    ${tc.input}`);
+          logs.push(`   Output:   ${actualOutput}`);
+          logs.push(`   Expected: ${expectedOutput}`);
+        }
+        break;
+      }
+    }
+
+    if (computedVerdict === "Accepted") {
+      logs.push(`✅ All ${total}/${total} test cases passed!`);
+    }
+
+    // Save submission record
     const submission = await Submission.create({
       userId,
       questionId: question._id,
       code: code || "",
       language: language || "javascript",
-      verdict: verdict || "Wrong Answer",
-      passed: passed || 0,
-      total: total || 0,
+      verdict: computedVerdict,
+      passed,
+      total,
     });
 
     let awardResult = { xpGained: 0, newLevel: 1, rank: "Beginner" };
-    if (verdict === "Accepted") {
-      // Call service to record question completion and award XP
+    if (computedVerdict === "Accepted") {
       const result = await awardQuestionCompletion(String(userId), questionSlug);
       awardResult = {
         xpGained: result.xpGained || 0,
@@ -70,7 +140,6 @@ export async function POST(req: NextRequest) {
         rank: result.rank || "Beginner",
       };
     } else {
-      // If attempted, ensure we mark as attempted in SolvedQuestion
       const SolvedQuestion = mongoose.models.solved_question || mongoose.model("solved_question");
       const alreadySolved = await SolvedQuestion.findOne({ userId, questionId: question._id });
       if (!alreadySolved) {
@@ -87,8 +156,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Submission saved successfully!",
+      message: computedVerdict === "Accepted" ? "Accepted!" : `Verdict: ${computedVerdict}`,
       submission,
+      verdict: computedVerdict,
+      passed,
+      total,
+      logs,
       ...awardResult,
     });
 

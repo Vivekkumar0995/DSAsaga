@@ -26,12 +26,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Sanitize test cases to ensure is_hidden is a strict boolean
+    const sanitizedTestCases = Array.isArray(question.test_cases)
+      ? question.test_cases.map((tc: any) => ({
+          input: String(tc.input || ""),
+          output: String(tc.output || ""),
+          is_hidden: Boolean(tc.is_hidden),
+        }))
+      : [];
+
     // Use $set so we never accidentally wipe fields not in this payload
     const updatedQuestion = await Question.findOneAndUpdate(
       { slug: question.slug.toLowerCase().trim() },
       {
         $set: {
           ...question,
+          test_cases: sanitizedTestCases,
           data_structure_id: ds._id,
           slug: question.slug.toLowerCase().trim(),
         },
@@ -54,22 +64,41 @@ export async function POST(req: NextRequest) {
 }
 
 // PATCH /api/admin/questions
-// Update only the reference_solution for a question by slug
+// Update reference_solution or test_cases for a question by slug
 export async function PATCH(req: NextRequest) {
   try {
     await connectDB();
-    const { slug, reference_solution } = await req.json();
+    const { slug, reference_solution, test_cases } = await req.json();
 
-    if (!slug || reference_solution === undefined) {
+    if (!slug) {
       return NextResponse.json(
-        { success: false, message: "Missing slug or reference_solution" },
+        { success: false, message: "Missing slug" },
+        { status: 400 }
+      );
+    }
+
+    const updateFields: any = {};
+    if (reference_solution !== undefined) {
+      updateFields.reference_solution = reference_solution;
+    }
+    if (test_cases !== undefined && Array.isArray(test_cases)) {
+      updateFields.test_cases = test_cases.map((tc: any) => ({
+        input: String(tc.input || ""),
+        output: String(tc.output || ""),
+        is_hidden: Boolean(tc.is_hidden),
+      }));
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+      return NextResponse.json(
+        { success: false, message: "No fields provided to update" },
         { status: 400 }
       );
     }
 
     const updated = await Question.findOneAndUpdate(
       { slug: slug.toLowerCase().trim() },
-      { $set: { reference_solution } },
+      { $set: updateFields },
       { new: true }
     );
 
@@ -80,7 +109,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, message: "Reference solution updated" });
+    return NextResponse.json({ success: true, message: "Question updated successfully" });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: error.message || "Failed to update" },

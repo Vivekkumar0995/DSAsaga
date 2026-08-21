@@ -40,11 +40,18 @@ const SAMPLE_QUESTION_JSON = {
   test_cases: [
     {
       input: "[2,7,11,15], 9",
-      output: "[0,1]"
+      output: "[0,1]",
+      is_hidden: false
     },
     {
       input: "[3,2,4], 6",
-      output: "[1,2]"
+      output: "[1,2]",
+      is_hidden: false
+    },
+    {
+      input: "[3,3], 6",
+      output: "[0,1]",
+      is_hidden: true
     }
   ],
   reference_solution: "function twoSum(nums, target) {\n    const map = new Map();\n    for (let i = 0; i < nums.length; i++) {\n        const diff = target - nums[i];\n        if (map.has(diff)) return [map.get(diff), i];\n        map.set(nums[i], i);\n    }\n    return [];\n}"
@@ -137,6 +144,59 @@ export default function AdminQuestionsPage() {
     }
   };
 
+  // Test cases quick-editor (JSON Payload)
+  const [tcSlug, setTcSlug] = useState("two-sum");
+  const [tcJson, setTcJson] = useState(
+    JSON.stringify(
+      [
+        { input: "[2,7,11,15], 9", output: "[0,1]", is_hidden: false },
+        { input: "[3,2,4], 6", output: "[1,2]", is_hidden: false },
+        { input: "[3,3], 6", output: "[0,1]", is_hidden: true },
+      ],
+      null,
+      2
+    )
+  );
+  const [savingTc, setSavingTc] = useState(false);
+
+  const handleSaveTestCases = async () => {
+    if (!tcSlug.trim()) {
+      toast.error("Enter a question slug");
+      return;
+    }
+    if (!tcJson.trim()) {
+      toast.error("Test cases JSON is empty");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(tcJson);
+    } catch (e: any) {
+      toast.error("Invalid JSON: " + e.message);
+      return;
+    }
+
+    if (!Array.isArray(parsed)) {
+      toast.error("Test cases must be a JSON array: [{ input, output, is_hidden }]");
+      return;
+    }
+
+    setSavingTc(true);
+    const t = toast.loading("Saving test cases...");
+    try {
+      await axios.patch("/api/admin/questions", {
+        slug: tcSlug.trim(),
+        test_cases: parsed,
+      });
+      toast.success("Test cases saved! ✅", { id: t });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to save test cases", { id: t });
+    } finally {
+      setSavingTc(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto pt-32 pb-10 px-4 sm:px-6 lg:px-8">
@@ -195,6 +255,47 @@ export default function AdminQuestionsPage() {
               className="px-6 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? "Saving..." : "🚀 Upload Question"}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Test Cases Quick-Editor (JSON Payload) ────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mt-6">
+          <div className="mb-4">
+            <h2 className="text-sm font-semibold text-gray-700">🧪 Set / Update Test Cases (JSON Payload)</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Paste the JSON array of test cases for a question. Use <code>"is_hidden": true</code> for hidden test cases.
+            </p>
+          </div>
+
+          <div className="mb-3">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Question Slug</label>
+            <input
+              value={tcSlug}
+              onChange={(e) => setTcSlug(e.target.value)}
+              placeholder="e.g. two-sum"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Test Cases (JSON Array)</label>
+            <textarea
+              value={tcJson}
+              onChange={(e) => setTcJson(e.target.value)}
+              placeholder={`[\n  {\n    "input": "[2,7,11,15], 9",\n    "output": "[0,1]",\n    "is_hidden": false\n  }\n]`}
+              spellCheck={false}
+              className="w-full h-52 font-mono text-xs p-4 bg-gray-900 text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleSaveTestCases}
+              disabled={savingTc}
+              className="px-6 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingTc ? "Saving..." : "💾 Save Test Cases"}
             </button>
           </div>
         </div>

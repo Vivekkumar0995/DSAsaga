@@ -80,6 +80,10 @@ const questionSchema = new Schema({
                 type: String,
                 required: true,
             },
+            is_hidden: {
+                type: Boolean,
+                default: false,
+            },
         },
     ],
     order:{
