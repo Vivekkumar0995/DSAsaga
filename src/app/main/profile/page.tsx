@@ -1,6 +1,5 @@
 "use client"
 
-import Navbar from "@/components/ui/Navbar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import Sidebar from "@/components/profile/Sidebar";
 
