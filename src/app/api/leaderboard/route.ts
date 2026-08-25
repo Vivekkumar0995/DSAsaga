@@ -57,6 +57,16 @@ export async function GET() {
       await pipeline.exec();
     }
 
+    // Calculate the most recent update time from user progress
+    const latestProgressUpdate = progress.reduce((latest, p) => {
+      const current = new Date(p.updatedAt || p.createdAt || 0).getTime();
+      return current > latest ? current : latest;
+    }, 0);
+
+    const lastUpdated = latestProgressUpdate > 0
+      ? new Date(latestProgressUpdate).toISOString()
+      : new Date().toISOString();
+
     const formattedLeaderboard = leaderboardData.map((entry) => ({
       _id: entry._id,
       score: entry.xp,
@@ -69,6 +79,9 @@ export async function GET() {
       {
         message: "Leaderboard fetched successfully",
         leaderboard: formattedLeaderboard,
+        lastUpdated,
+        type: "global",
+        description: "Ranked by total XP earned, problems solved, and level milestones. Top climbers are updated in real time."
       },
       { status: 200 },
     );

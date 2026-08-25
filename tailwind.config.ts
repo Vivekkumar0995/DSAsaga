@@ -43,6 +43,28 @@ const config: Config = {
           foreground: "var(--card-foreground)",
         },
       },
+      animation: {
+        sheen: "sheen 6s linear infinite",
+        blink: "blink 1.1s steps(1) infinite",
+        riseIn: "riseIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards",
+        typeIn: "typeIn 0.4s ease forwards",
+      },
+      keyframes: {
+        sheen: {
+          "to": { "background-position": "-300% 0" },
+        },
+        blink: {
+          "50%": { opacity: "0" },
+        },
+        riseIn: {
+          "from": { opacity: "0", transform: "translateY(16px)" },
+          "to": { opacity: "1", transform: "translateY(0)" },
+        },
+        typeIn: {
+          "from": { opacity: "0", transform: "translateX(-10px)" },
+          "to": { opacity: "1", transform: "translateX(0)" },
+        },
+      },
     },
   },
   darkMode: "class",

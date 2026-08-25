@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import React, { useState, useEffect } from "react";
 
 export type TopLeaderboardUser = {
   rank: 1 | 2 | 3;
@@ -10,268 +9,108 @@ export type TopLeaderboardUser = {
     name: string;
     profileImage?: string;
   };
+  handle?: string;
+  lang?: string;
+  diff?: number;
 };
 
 interface Top3LeaderboardProps {
-  topUsers: TopLeaderboardUser[]; 
+  topUsers: TopLeaderboardUser[];
 }
 
-const TypewriterText = ({ strings, typeSpeed = 50, backSpeed = 30, backDelay = 1500 }: { strings: string[], typeSpeed?: number, backSpeed?: number, backDelay?: number }) => {
-  const [currentStringIndex, setCurrentStringIndex] = useState(0);
-  const [currentText, setCurrentText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+const CountUp = ({ value, duration = 900 }: { value: number; duration?: number }) => {
+  const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-
-    if (isDeleting) {
-      if (currentText === "") {
-        timeout = setTimeout(() => {
-          setIsDeleting(false);
-          setCurrentStringIndex((prev) => (prev + 1) % strings.length);
-        }, 300);
-      } else {
-        timeout = setTimeout(() => {
-          setCurrentText(currentText.slice(0, -1));
-        }, backSpeed);
+    let startTimestamp: number | null = null;
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // cubic ease-out
+      setDisplayValue(Math.round(eased * value));
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
       }
-    } else {
-      if (currentText === strings[currentStringIndex]) {
-        timeout = setTimeout(() => {
-          setIsDeleting(true);
-        }, backDelay);
-      } else {
-        timeout = setTimeout(() => {
-          setCurrentText(strings[currentStringIndex].slice(0, currentText.length + 1));
-        }, typeSpeed);
-      }
-    }
-
-    return () => clearTimeout(timeout);
-  }, [currentText, isDeleting, currentStringIndex, strings, typeSpeed, backSpeed, backDelay]);
-
-  return (
-    <span className="font-mono text-[11px] sm:text-sm text-slate-900 whitespace-pre-wrap font-bold leading-relaxed">
-      {currentText}
-      <span className="animate-pulse border-r-2 border-slate-900 ml-[1px]"></span>
-    </span>
-  );
-};
-
-const EXTRA_DATA = {
-  1: { color: "#FFD700", lang: "Terminal" },
-  2: { color: "#C0C0C0", lang: "Terminal" },
-  3: { color: "#CD7F32", lang: "Terminal" }
-};
-
-const CubeCard = ({ user, rank, scale }: { user: TopLeaderboardUser; rank: 1 | 2 | 3; scale: number }) => {
-  const data = EXTRA_DATA[rank];
-  const color = data.color;
-
-  const rotateX = useMotionValue(15);
-  const rotateY = useMotionValue(-20);
-
-
-  const springConfig = { damping: 30, stiffness: 60, mass: 1.2 };
-  const smoothX = useSpring(rotateX, springConfig);
-  const smoothY = useSpring(rotateY, springConfig);
-
-  const [isDragging, setIsDragging] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [hoveredFace, setHoveredFace] = useState<number | null>(null);
-  const lastPos = useRef({ x: 0, y: 0 });
-  const autoRotateRef = useRef<number>(0);
-
-  useEffect(() => {
-    if (!isDragging && !isHovered) {
-      let angle = rotateY.get();
-      const loop = () => {
-        angle += 0.3;
-        rotateY.set(angle);
-        autoRotateRef.current = requestAnimationFrame(loop);
-      };
-      autoRotateRef.current = requestAnimationFrame(loop);
-      return () => cancelAnimationFrame(autoRotateRef.current!);
-    }
-  }, [isDragging, isHovered, rotateY]);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    setIsDragging(true);
-    lastPos.current = { x: e.clientX, y: e.clientY };
-    (e.target as Element).setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const deltaX = e.clientX - lastPos.current.x;
-    const deltaY = e.clientY - lastPos.current.y;
-
-    const mult = 0.5;
-    rotateY.set(rotateY.get() + deltaX * mult);
-    rotateX.set(rotateX.get() - deltaY * mult);
-
-    lastPos.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    setIsDragging(false);
-    (e.target as Element).releasePointerCapture(e.pointerId);
-
-    rotateX.set(15);
-
-
-    const currentY = rotateY.get();
-    const targetY = Math.round((currentY + 20) / 360) * 360 - 20;
-    rotateY.set(targetY);
-  };
-
-
-  const renderRankFace = (faceIndex: number) => {
-    const baseColors = ["#adccc7", "#144c52", "#053220", "#d34c26", "#f2e9d0", "#eaceb4", "#e79e85", "#bb5a5a"];
-
-    const getStableRandomColor = (seed: number) => {
-      const x = Math.sin(seed) * 10000;
-      const index = Math.floor((x - Math.floor(x)) * baseColors.length);
-      return baseColors[index];
     };
+    window.requestAnimationFrame(step);
+  }, [value, duration]);
 
-    const gridColors = Array.from({ length: 64 }).map((_, i) => getStableRandomColor(rank * 1000 + faceIndex * 100 + i));
+  return <>{displayValue.toLocaleString()}</>;
+};
 
-    const isThisFaceHovered = hoveredFace === faceIndex;
-
-    return (
-      <div
-        onMouseEnter={() => setHoveredFace(faceIndex)}
-        onMouseLeave={() => setHoveredFace(null)}
-        className={`absolute inset-0 w-full h-full flex flex-col items-center justify-center p-2 rounded-lg overflow-hidden transition-all duration-[600ms] ease-in-out border-2 ${isHovered ? "opacity-100" : "border-slate-200/20 opacity-95 shadow-sm"}`}
-        style={{
-          backfaceVisibility: "hidden",
-          borderColor: isHovered ? color : "rgba(255,255,255,0.2)",
-          pointerEvents: "auto"
-        }}
-      >
-
-        <div className={`absolute inset-0 grid grid-cols-8 grid-rows-8 z-0 w-full h-full pointer-events-none transition-transform duration-[600ms] ${isThisFaceHovered ? "scale-125" : "scale-100"}`}>
-          {gridColors.map((c, i) => (
-            <div key={i} className="w-full h-full border border-black/10" style={{ backgroundColor: c }} />
-          ))}
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center px-4 py-4 w-[90%] text-center rounded-xl border transition-all duration-700 backdrop-blur-md shadow-2xl bg-slate-900/95 border-white/20">
-          <span
-            key={isThisFaceHovered ? 'hovered' : 'unhovered'}
-            className={`font-mono font-black text-6xl sm:text-8xl transition-colors duration-300 ${isThisFaceHovered ? "text-yellow-400 animate-pulse" : "text-white"}`}
-            style={{
-              ...(isThisFaceHovered ? { animationIterationCount: 3, animationDuration: "400ms" } : {})
-            }}
-          >
-            {rank}
-          </span>
-          <span className="font-mono text-white text-lg sm:text-xl mt-2 font-bold w-full break-words whitespace-normal leading-tight">
-            {user.userId?.name || "Anonymous"}
-          </span>
-          <span className="font-mono text-sm sm:text-base mt-2 font-bold transition-all duration-500" style={{ color: color }}>
-            Score: {user.score.toLocaleString()}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  const renderCodeFace = () => (
-    <div
-      className={`absolute inset-0 w-full h-full bg-[#fb923c] shadow-inner flex flex-col rounded-lg overflow-hidden transition-all duration-[600ms] ease-in-out border-2 ${isHovered ? "opacity-100" : "border-orange-400/50 opacity-95"}`}
-      style={{
-        backfaceVisibility: "hidden",
-        borderColor: isHovered ? color : "rgba(251, 146, 60, 0.5)"
-      }}
-    >
-      <div className="w-full h-8 sm:h-10 bg-black/10 border-b border-black/10 flex items-center px-4 relative shrink-0 z-10">
-        {/* Apple style traffic lights */}
-        <div className="flex gap-1.5 sm:gap-2">
-          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#ff5f57]" />
-          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#febc2e]" />
-          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#28c840]" />
-        </div>
-        <span className="absolute right-4 font-mono font-bold text-slate-800 text-sm sm:text-base tracking-widest">
-          DSASaga
-        </span>
-      </div>
-      <div className="flex-1 p-3 sm:p-4 overflow-hidden pointer-events-none flex flex-col gap-2 relative z-10">
-        <TypewriterText strings={[
-          `Name: ${user.userId?.name || "Anonymous"}\nRank: #${rank}\nProblems Solved: ${user.score.toLocaleString()}`
-        ]} typeSpeed={60} backSpeed={30} backDelay={2000} />
-      </div>
-    </div>
-  );
-
-  const CUBE_SIZE = "w-40 h-40 sm:w-56 sm:h-56";
-  const Z_DIST_CLASSES = "[--z-dist:80px] sm:[--z-dist:112px]";
-
-  return (
-    <div
-      className="flex flex-col items-center group relative perspective-[1200px]"
-      style={{ transform: `scale(${scale})`, zIndex: rank === 1 ? 20 : 10 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <motion.div
-        className={`${CUBE_SIZE} ${Z_DIST_CLASSES} relative cursor-grab active:cursor-grabbing`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        style={{
-          rotateX: smoothX,
-          rotateY: smoothY,
-          transformStyle: "preserve-3d"
-        }}
-        whileHover={{ scale: 1.05 }}
-      >
-        <div className={`absolute inset-0 flex justify-center items-center`} style={{ backfaceVisibility: "hidden", transform: `translateZ(var(--z-dist))` }}>
-          {renderRankFace(0)}
-        </div>
-        <div className={`absolute inset-0 flex justify-center items-center`} style={{ backfaceVisibility: "hidden", transform: `rotateY(180deg) translateZ(var(--z-dist))` }}>
-          {renderRankFace(1)}
-        </div>
-        <div className={`absolute inset-0 flex justify-center items-center`} style={{ backfaceVisibility: "hidden", transform: `rotateY(90deg) translateZ(var(--z-dist))` }}>
-          {renderCodeFace()}
-        </div>
-        <div className={`absolute inset-0 flex justify-center items-center`} style={{ backfaceVisibility: "hidden", transform: `rotateY(-90deg) translateZ(var(--z-dist))` }}>
-          {renderCodeFace()}
-        </div>
-        <div className={`absolute inset-0 flex justify-center items-center`} style={{ backfaceVisibility: "hidden", transform: `rotateX(90deg) translateZ(var(--z-dist))` }}>
-          {renderRankFace(2)}
-        </div>
-        <div className={`absolute inset-0 flex justify-center items-center`} style={{ backfaceVisibility: "hidden", transform: `rotateX(-90deg) translateZ(var(--z-dist))` }}>
-          {renderRankFace(3)}
-        </div>
-      </motion.div>
-    </div>
-  );
+const getInitials = (name: string) => {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 };
 
 export const Top3Leaderboard: React.FC<Top3LeaderboardProps> = ({ topUsers }) => {
-  const displayOrder: (1 | 2 | 3)[] = [2, 1, 3];
+  const ranks: (1 | 2 | 3)[] = [1, 2, 3];
 
   return (
-    <div className="relative w-full flex flex-col items-center justify-center py-2 sm:py-4 overflow-visible">
-      <div className="flex flex-col xl:flex-row items-center xl:items-start justify-center gap-y-36 xl:gap-x-12 2xl:gap-x-47 z-10 w-full max-w-7xl px-4 mt-6 xl:mt-12 mb-16 xl:mb-24">
-        {displayOrder.map((rank) => {
-          const user = topUsers.find((u) => u.rank === rank) || { rank,score: 0,userId:{ name: "Anonymous" } };
-          const scale = rank === 1 ? 1.2 : 1.0;
+    <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-[34px] items-end" id="podium">
+      {ranks.map((rank) => {
+        const user = topUsers.find((u) => u.rank === rank);
+        if (!user) return null;
 
-          return (
-            <div key={rank} className={`transition-all duration-500 w-full flex justify-center ${rank === 1 ? "mt-0" : "xl:mt-32"}`}>
-              <CubeCard
-                user={user as TopLeaderboardUser}
-                rank={rank}
-                scale={scale}
+        const diff = user.diff ?? 0;
+        const diffClass =
+          diff > 0
+            ? "bg-[#10B981]/10 dark:bg-[#7EE787]/10 text-[#10B981] dark:text-[#7EE787]"
+            : diff < 0
+            ? "bg-red-500/10 dark:bg-[#FF7B72]/10 text-red-500 dark:text-[#FF7B72]"
+            : "bg-slate-400/10 dark:bg-[#7D8497]/10 text-slate-500 dark:text-[#7D8497]";
+            
+        const diffText = diff > 0 ? `▲ ${diff}` : diff < 0 ? `▼ ${Math.abs(diff)}` : "— flat";
+        const crown = rank === 1 ? "#1 · TOP OF THE STACK" : rank === 2 ? "#2" : "#3";
+        const initials = getInitials(user.userId?.name || "Anonymous");
+
+        const cardStyle =
+          rank === 1
+            ? "order-2 min-h-[215px] sm:min-h-[280px] pt-5 sm:pt-8 text-[#F59E0B] dark:text-[#F2B866] border border-[#F59E0B]/40 dark:border-[#F2B866]/40 bg-gradient-to-br from-[#F59E0B]/10 to-white dark:to-[#10141C] shadow-[0_10px_30px_-10px_rgba(245,158,11,0.25)] dark:shadow-[0_15px_35px_-10px_rgba(242,184,102,0.18)] hover:shadow-[0_15px_35px_-5px_rgba(245,158,11,0.35)] dark:hover:shadow-[0_20px_40px_-5px_rgba(242,184,102,0.25)]"
+            : rank === 2
+            ? "order-1 min-h-[185px] sm:min-h-[240px] text-slate-500 dark:text-[#C8CCD6] border border-slate-400/30 dark:border-[#C8CCD6]/30 bg-gradient-to-br from-slate-400/10 to-white dark:to-[#10141C] shadow-[0_8px_25px_-10px_rgba(148,163,184,0.12)] hover:shadow-[0_12px_30px_-5px_rgba(148,163,184,0.2)]"
+            : "order-3 min-h-[170px] sm:min-h-[220px] text-[#B45309] dark:text-[#D99A6C] border border-[#B45309]/30 dark:border-[#D99A6C]/30 bg-gradient-to-br from-[#B45309]/10 to-white dark:to-[#10141C] shadow-[0_8px_25px_-10px_rgba(180,83,9,0.12)] hover:shadow-[0_12px_30px_-5px_rgba(180,83,9,0.2)]";
+
+        const avatarStyle =
+          rank === 1
+            ? "w-[50px] h-[50px] sm:w-[66px] sm:h-[66px] text-base sm:text-xl rounded-full mx-auto mb-2 sm:mb-3 flex items-center justify-center font-mono font-bold bg-slate-100 dark:bg-[#161B26] border-[1.5px] border-current text-slate-900 dark:text-[#E3E6EC]"
+            : "w-11 h-11 sm:w-14 sm:h-14 text-sm sm:text-lg rounded-full mx-auto mb-2 sm:mb-3 flex items-center justify-center font-mono font-bold bg-slate-100 dark:bg-[#161B26] border-[1.5px] border-current text-slate-900 dark:text-[#E3E6EC]";
+
+        const delay = rank === 1 ? "0.15s" : rank === 2 ? "0.05s" : "0.25s";
+
+        return (
+          <div
+            key={rank}
+            className={`rounded-xl sm:rounded-2xl p-2 sm:p-4 px-2 sm:px-4 pb-3 sm:pb-5 relative opacity-0 translate-y-4 animate-riseIn text-center overflow-hidden transition-all duration-200 hover:-translate-y-1 ${cardStyle}`}
+            style={{ animationDelay: delay }}
+          >
+            {/* Overlay repeating stripes */}
+            <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[repeating-linear-gradient(135deg,currentColor_0_1px,transparent_1px_8px)]" />
+
+            <div className="font-mono text-[8px] sm:text-[11px] tracking-widest text-current opacity-85 mb-1.5 sm:mb-3 font-bold">{crown}</div>
+            {user.userId?.profileImage ? (
+              <img
+                src={user.userId.profileImage}
+                alt={user.userId.name}
+                className={`${avatarStyle} object-cover`}
               />
+            ) : (
+              <div className={avatarStyle}>{initials}</div>
+            )}
+            <div className="font-semibold text-xs sm:text-[14.5px] text-slate-900 dark:text-[#E3E6EC] truncate">{user.userId?.name || "Anonymous"}</div>
+            <div className="font-mono text-[10px] sm:text-[11.5px] text-slate-400 dark:text-[#4D5468] mt-0.5 truncate">{user.handle || "@anonymous"}</div>
+            <div className="font-mono font-extrabold text-lg sm:text-2xl text-current mt-1.5 sm:mt-3">
+              <CountUp value={user.score} />
             </div>
-          );
-        })}
-      </div>
+            <div className="text-[8px] sm:text-[10px] text-slate-400 dark:text-[#4D5468] uppercase tracking-wider mt-0.5">points</div>
+            <div className={`inline-flex items-center gap-0.5 sm:gap-1 mt-1.5 sm:mt-2.5 font-mono text-[9px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full ${diffClass}`}>{diffText}</div>
+          </div>
+        );
+      })}
     </div>
   );
 };
