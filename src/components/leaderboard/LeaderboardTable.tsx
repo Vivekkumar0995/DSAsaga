@@ -1,67 +1,29 @@
 import React from "react";
-import LeaderboardRow from "./LeaderboardRow";
-
-export interface PopulatedUser {
-  _id: string;
-  name: string;
-  profileImage?: string;
-} 
-
-export interface LeaderboardEntry {
-  _id: string;
-  score: number;
-  problemsSolved: number;
-  rank: string;
-  userId: PopulatedUser | null;
-}
+import LeaderboardRow, { DecoratedLeaderboardEntry } from "./LeaderboardRow";
 
 interface LeaderboardTableProps {
-  entries: LeaderboardEntry[];
+  entries: DecoratedLeaderboardEntry[];
 }
 
 export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl overflow-hidden mt-8 relative z-10 w-full">
-      <div className="overflow-x-auto w-full">
-        <table className="min-w-full divide-y divide-slate-100">
-          <thead className="bg-slate-50/80 backdrop-blur-md">
-            <tr>
-              <th scope="col" className="px-6 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
-                Rank
-              </th>
-              <th scope="col" className="px-6 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
-                Coder
-              </th>
-              <th scope="col" className="px-6 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
-                Problems Solved
-              </th>
-              <th scope="col" className="px-6 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">
-                Total Score
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 text-slate-800 bg-white/40">
-
-            {entries.map((entry, index) => (
-              <LeaderboardRow
-                key={entry._id}
-                entry={entry}
-                index={index}
-              />
-            ))}
-          </tbody>
-        </table>
+    <div className="w-full">
+      <div className="grid grid-cols-[36px_1fr_80px_80px] sm:grid-cols-[50px_1fr_120px_110px] gap-2 sm:gap-3 px-4 pb-2.5 font-mono text-[10.5px] text-slate-400 dark:text-[#4D5468] uppercase tracking-[0.08em]">
+        <span className="text-right pr-1.5">#</span>
+        <span>user</span>
+        <span className="text-right">solved</span>
+        <span className="text-right">score</span>
       </div>
-
-      {entries.length === 0 && (
-        <div className="p-16 text-center flex flex-col items-center">
-          <div className="bg-slate-50 p-4 rounded-full mb-4 ring-4 ring-slate-100">
-            <span className="text-4xl">🏅</span>
-          </div>
-          <p className="text-xl text-slate-800 font-semibold">No users on the leaderboard yet!</p>
-          <p className="text-sm text-slate-500 mt-2">Become the pioneer. Sign up and conquer the first problem!</p>
-        </div>
-      )}
+      <div className="bg-white dark:bg-[#10141C] border border-slate-200 dark:border-[#212739] rounded-[14px] overflow-hidden" id="list">
+        {entries.map((entry, index) => (
+          <LeaderboardRow
+            key={entry._id}
+            entry={entry}
+            index={index}
+          />
+        ))}
+      </div>
     </div>
   );
 }
+export type { DecoratedLeaderboardEntry };
