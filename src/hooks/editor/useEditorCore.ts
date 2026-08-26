@@ -1,26 +1,79 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 export interface HistoryFrame {
   code: string;
   caretOffset: number;
 }
 
-export function useEditorCore(initialCode: string = "") {
+interface LanguageHistory {
+  frames: HistoryFrame[];
+  index: number;
+}
+
+export function useEditorCore(initialCode: string = "", activeLang: string = "default") {
   const [code, setCodeRaw] = useState(initialCode);
   const editorRef = useRef<HTMLDivElement>(null);
   const caretOffsetRef = useRef<number>(0);
+  const activeLangRef = useRef<string>(activeLang);
 
-  // Store objects of code and selection positions
-  const historyRef = useRef<HistoryFrame[]>([{ code: initialCode, caretOffset: 0 }]);
-  const historyIndexRef = useRef<number>(0);
+  // Store history frames separately per language key
+  const historiesRef = useRef<Record<string, LanguageHistory>>({});
 
-  // setCode updates code state and pushes new record to Undo/Redo stack
+  const activeLangKey = activeLang || "default";
+
+  // Helper to check if history exists for a language
+  const hasLanguageHistory = useCallback((lang: string): boolean => {
+    return !!historiesRef.current[lang];
+  }, []);
+
+  // Helper to get or initialize history for a language
+  const getLangHistory = useCallback((lang: string, defaultCode: string, defaultOffset: number = 0): LanguageHistory => {
+    if (!historiesRef.current[lang]) {
+      historiesRef.current[lang] = {
+        frames: [{ code: defaultCode, caretOffset: defaultOffset }],
+        index: 0,
+      };
+    }
+    return historiesRef.current[lang];
+  }, []);
+
+  // Synchronize active language and switch editor text when activeLang changes
+  useEffect(() => {
+    activeLangRef.current = activeLangKey;
+    const langHist = getLangHistory(activeLangKey, initialCode, 0);
+    const currentFrame = langHist.frames[langHist.index];
+
+    setCodeRaw(currentFrame.code);
+    caretOffsetRef.current = currentFrame.caretOffset;
+  }, [activeLangKey, initialCode, getLangHistory]);
+
+  // Method to set/load initial code for a language without creating unwanted undo history entries
+  const initLanguageCode = useCallback((lang: string, codeToSet: string, offset: number = 0) => {
+    historiesRef.current[lang] = {
+      frames: [{ code: codeToSet, caretOffset: offset }],
+      index: 0,
+    };
+    if (activeLangRef.current === lang) {
+      setCodeRaw(codeToSet);
+      caretOffsetRef.current = offset;
+    }
+  }, []);
+
+  // Method to clear history across all languages (e.g. when changing questions)
+  const resetAllHistory = useCallback(() => {
+    historiesRef.current = {};
+  }, []);
+
+  // setCode updates code state and pushes new record to active language's Undo/Redo stack
   const setCode = useCallback((newCode: string, newCaretOffset?: number) => {
+    const lang = activeLangRef.current;
+    const resolvedOffset = newCaretOffset !== undefined ? newCaretOffset : caretOffsetRef.current;
+
     setCodeRaw(newCode);
 
-    const resolvedOffset = newCaretOffset !== undefined ? newCaretOffset : caretOffsetRef.current;
-    const history = historyRef.current;
-    const idx = historyIndexRef.current;
+    const langHist = getLangHistory(lang, newCode, resolvedOffset);
+    const history = langHist.frames;
+    const idx = langHist.index;
 
     // Prune forward (Redo) history on new typing action
     const trimmed = history.slice(0, idx + 1);
@@ -28,34 +81,40 @@ export function useEditorCore(initialCode: string = "") {
     // If typing hasn't changed the actual code text, just update caret in current frame
     if (trimmed.length > 0 && trimmed[trimmed.length - 1].code === newCode) {
       trimmed[trimmed.length - 1].caretOffset = resolvedOffset;
-      historyRef.current = trimmed;
+      langHist.frames = trimmed;
       return;
     }
 
     trimmed.push({ code: newCode, caretOffset: resolvedOffset });
 
-    // Restrict history stack size to 200 elements
+    // Restrict history stack size to 200 elements per language
     if (trimmed.length > 200) {
       trimmed.shift();
     }
 
-    historyRef.current = trimmed;
-    historyIndexRef.current = trimmed.length - 1;
-  }, []);
+    langHist.frames = trimmed;
+    langHist.index = trimmed.length - 1;
+  }, [getLangHistory]);
 
   const undo = useCallback((): number | null => {
-    if (historyIndexRef.current <= 0) return null;
-    historyIndexRef.current -= 1;
-    const frame = historyRef.current[historyIndexRef.current];
+    const lang = activeLangRef.current;
+    const langHist = historiesRef.current[lang];
+    if (!langHist || langHist.index <= 0) return null;
+
+    langHist.index -= 1;
+    const frame = langHist.frames[langHist.index];
     setCodeRaw(frame.code);
     caretOffsetRef.current = frame.caretOffset;
     return frame.caretOffset;
   }, []);
 
   const redo = useCallback((): number | null => {
-    if (historyIndexRef.current >= historyRef.current.length - 1) return null;
-    historyIndexRef.current += 1;
-    const frame = historyRef.current[historyIndexRef.current];
+    const lang = activeLangRef.current;
+    const langHist = historiesRef.current[lang];
+    if (!langHist || langHist.index >= langHist.frames.length - 1) return null;
+
+    langHist.index += 1;
+    const frame = langHist.frames[langHist.index];
     setCodeRaw(frame.code);
     caretOffsetRef.current = frame.caretOffset;
     return frame.caretOffset;
@@ -167,5 +226,8 @@ export function useEditorCore(initialCode: string = "") {
     caretOffsetRef,
     saveCaretOffset,
     restoreCaretOffset,
+    initLanguageCode,
+    hasLanguageHistory,
+    resetAllHistory,
   };
 }

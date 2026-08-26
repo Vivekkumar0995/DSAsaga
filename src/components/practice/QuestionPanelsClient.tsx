@@ -16,6 +16,7 @@ import { useEditorCore } from "@/hooks/editor/useEditorCore";
 import { useCompletions } from "@/hooks/editor/useCompletions";
 import Completions from "@/components/editor/Completions";
 import { getEditorState, saveEditorState } from "@/lib/editor/indexedDB";
+import { detectLanguageFromCode } from "@/lib/sandbox/languageDetector";
 
 // ─── Types ────────────────────────────────────────────────────
 type Props = {
@@ -63,12 +64,12 @@ function generateDynamicStarterCode(lang: LangKey, question: any): string {
   // Parameters metadata (default to generic if not provided)
   // e.g. [{ name: "nums", type: "vector<int>" }, { name: "target", type: "int" }]
   const params = question?.params || [];
-  
-  const cppParams = params.map((p: any) => `${p.type || "int"} ${p.name || "param"}`).join(", ") || "vector<int>& nums, int target";
-  const javaParams = params.map((p: any) => `${p.type_java || p.type || "int"} ${p.name || "param"}`).join(", ") || "int[] nums, int target";
-  const cParams = params.map((p: any) => `${p.type_c || p.type || "int"} ${p.name || "param"}`).join(", ") || "int* nums, int numsSize, int target";
-  const jsParams = params.map((p: any) => p.name || "param").join(", ") || "nums, target";
-  const pyParams = params.map((p: any) => p.name || "param").join(", ") || "nums, target";
+
+  const cppParams = params.map((p: any) => `${p.type || "int"} ${p.name || "param"}`).join(", ");
+  const javaParams = params.map((p: any) => `${p.type_java || p.type || "int"} ${p.name || "param"}`).join(", ");
+  const cParams = params.map((p: any) => `${p.type_c || p.type || "int"} ${p.name || "param"}`).join(", ");
+  const jsParams = params.map((p: any) => p.name || "param").join(", ");
+  const pyParams = params.map((p: any) => p.name || "param").join(", ");
 
   switch (lang) {
     case "cpp":
@@ -122,21 +123,165 @@ function EmptySection({ icon: Icon, title, subtitle }: { icon: any; title: strin
   );
 }
 
-// ─── helpers ─────────────────────────────────────────────────
+function sortJsonArrays(obj: any): any {
+  if (Array.isArray(obj)) {
+    const mapped = obj.map(sortJsonArrays);
+    return mapped.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  } else if (obj && typeof obj === "object") {
+    const res: any = {};
+    for (const key of Object.keys(obj).sort()) {
+      res[key] = sortJsonArrays(obj[key]);
+    }
+    return res;
+  }
+  return obj;
+}
+
+function normalizeOutput(val: string | null | undefined, unordered = false): string {
+  if (val == null) return "";
+  const s = String(val).trim();
+  if (!s) return "";
+
+  try {
+    let parsed = JSON.parse(s);
+    if (unordered) {
+      parsed = sortJsonArrays(parsed);
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return s
+      .replace(/\r\n/g, "\n")
+      .replace(/\s+/g, " ")
+      .replace(/\s*([,\[\]\{\}:])\s*/g, "$1")
+      .trim();
+  }
+}
+
+function parseTopLevelInput(inputStr: string): any[] {
+  let s = (inputStr || "").trim();
+  if (!s) return [];
+
+  s = s.replace(/^[a-zA-Z0-9_$]+\s*=\s*/, "").replace(/,\s*[a-zA-Z0-9_$]+\s*=\s*/g, ",");
+  const sClean = s.replace(/\{/g, "[").replace(/\}/g, "]");
+
+  const tokens: string[] = [];
+  let current = "";
+  let depth = 0;
+  for (let i = 0; i < sClean.length; i++) {
+    const ch = sClean[i];
+    if (ch === '[' || ch === '(') depth++;
+    else if (ch === ']' || ch === ')') depth--;
+    if (ch === ',' && depth === 0) {
+      if (current.trim()) tokens.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) tokens.push(current.trim());
+
+  return tokens.map(tok => {
+    try {
+      return JSON.parse(tok);
+    } catch {
+      if (tok.toLowerCase() === "true") return true;
+      if (tok.toLowerCase() === "false") return false;
+      if (!isNaN(Number(tok))) return Number(tok);
+      return tok.replace(/^["']|["']$/g, "");
+    }
+  });
+}
+
+function checkOutputMatch(
+  actual: string,
+  expected: string | null,
+  unordered = false,
+  inputStr = "",
+  questionMeta?: any
+): boolean {
+  if (!expected && !actual) return true;
+  const normalizedActual = normalizeOutput(actual, unordered);
+
+  // 1. Direct string / JSON match against expected options (supports || separated options)
+  if (expected) {
+    const options = expected.split("||").map((opt) => opt.trim());
+    if (options.some((opt) => normalizeOutput(opt, unordered) === normalizedActual)) {
+      return true;
+    }
+  }
+
+  // 2. Problem-specific multi-answer verification (e.g. Two Sum, 3Sum, Subarrays)
+  if (questionMeta && inputStr && actual) {
+    const slug = (questionMeta.slug || questionMeta.title || "").toLowerCase();
+    const title = (questionMeta.title || "").toLowerCase();
+
+    // Two Sum verification
+    if (slug.includes("two-sum") || title.includes("two sum") || title.includes("twosum")) {
+      try {
+        const actualArr = JSON.parse(normalizedActual);
+        if (Array.isArray(actualArr) && actualArr.length === 2) {
+          const i = Number(actualArr[0]);
+          const j = Number(actualArr[1]);
+          const parsedInput = parseTopLevelInput(inputStr);
+          if (parsedInput.length >= 2 && Array.isArray(parsedInput[0])) {
+            const nums = parsedInput[0];
+            const target = Number(parsedInput[1]);
+            if (!isNaN(i) && !isNaN(j) && i !== j && i >= 0 && i < nums.length && j >= 0 && j < nums.length) {
+              if (nums[i] + nums[j] === target) {
+                return true;
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // 3Sum verification
+    if (slug.includes("3sum") || title.includes("3sum") || title.includes("three sum")) {
+      try {
+        const actualArr = JSON.parse(normalizedActual);
+        const parsedInput = parseTopLevelInput(inputStr);
+        if (Array.isArray(actualArr) && parsedInput.length >= 1 && Array.isArray(parsedInput[0])) {
+          const nums = parsedInput[0];
+          const target = parsedInput[1] !== undefined ? Number(parsedInput[1]) : 0;
+          if (Array.isArray(actualArr[0])) {
+            const isValid = actualArr.every((triplet: any) => {
+              if (!Array.isArray(triplet) || triplet.length !== 3) return false;
+              return triplet.reduce((a: number, b: number) => a + b, 0) === target;
+            });
+            if (isValid) return true;
+          }
+        }
+      } catch {}
+    }
+  }
+
+  // 3. Fallback: Unordered JSON array element equality check
+  if (expected) {
+    try {
+      const pActual = JSON.parse(normalizedActual);
+      const pExpected = JSON.parse(normalizeOutput(expected));
+      if (Array.isArray(pActual) && Array.isArray(pExpected) && pActual.length === pExpected.length) {
+        const sortCmp = (a: any, b: any) =>
+          typeof a === "number" && typeof b === "number" ? a - b : String(a).localeCompare(String(b));
+        const sortedA = [...pActual].sort(sortCmp);
+        const sortedE = [...pExpected].sort(sortCmp);
+        if (JSON.stringify(sortedA) === JSON.stringify(sortedE)) {
+          return true;
+        }
+      }
+    } catch {}
+  }
+
+  return false;
+}
+
 function deepEqual(a: any, b: any): boolean {
   if (a === b) return true;
   if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
   if (Array.isArray(a) !== Array.isArray(b)) return false;
   const ka = Object.keys(a), kb = Object.keys(b);
   return ka.length === kb.length && ka.every(k => deepEqual(a[k], b[k]));
-}
-
-function buildRunner(code: string) {
-  const m = code.match(/function\s+([a-zA-Z0-9_$]+)/)
-    || code.match(/(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:function|\([^)]*\)\s*=>)/);
-  if (!m) throw new Error('No function found. Define one like: function twoSum(nums, target) {...}');
-  const fn = new Function("console", `${code}\n return typeof ${m[1]} !== "undefined" ? ${m[1]} : null;`);
-  return { fn, name: m[1] };
 }
 
 // ─── Main Component ───────────────────────────────────────────
@@ -166,24 +311,38 @@ export default function QuestionPanelsClient({
   const [activeLang, setActiveLang] = useState<LangKey>("cpp");
   const getStarterCode = (l: LangKey) => generateDynamicStarterCode(l, question);
 
-  const { code, setCode, undo, redo, editorRef, caretOffsetRef, saveCaretOffset, restoreCaretOffset } =
-    useEditorCore(getStarterCode(activeLang));
+  const {
+    code, setCode, undo, redo, editorRef, caretOffsetRef,
+    saveCaretOffset, restoreCaretOffset, initLanguageCode,
+    hasLanguageHistory, resetAllHistory,
+  } = useEditorCore(getStarterCode(activeLang), activeLang);
 
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const lineCount = code.split("\n").length;
+
+  // ── Reset history when question slug changes ────────────────
+  useEffect(() => {
+    resetAllHistory();
+  }, [question?.slug, resetAllHistory]);
 
   // ── IndexedDB ────────────────────────────────────────────
   useEffect(() => {
     if (!question?.slug || !activeLang) return;
     let alive = true;
-    getEditorState(question.slug, activeLang).then(saved => {
-      if (!alive) return;
-      if (saved) { setCode(saved.code, saved.caretOffset); caretOffsetRef.current = saved.caretOffset; }
-      else       { setCode(getStarterCode(activeLang), 0);  caretOffsetRef.current = 0; }
-    });
+
+    // Load initial code from IndexedDB only if this language does not have session history yet
+    if (!hasLanguageHistory(activeLang)) {
+      getEditorState(question.slug, activeLang).then(saved => {
+        if (!alive) return;
+        if (saved) {
+          initLanguageCode(activeLang, saved.code, saved.caretOffset);
+        } else {
+          initLanguageCode(activeLang, getStarterCode(activeLang), 0);
+        }
+      });
+    }
     return () => { alive = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLang, question?.slug]);
+  }, [activeLang, question?.slug, hasLanguageHistory, initLanguageCode]);
 
   useEffect(() => {
     if (!question?.slug || !activeLang) return;
@@ -249,8 +408,10 @@ export default function QuestionPanelsClient({
   // Custom test cases (seeded from DB, user can edit/add/remove)
   type CustomCase = { id: string; input: string };
   const seedCases: CustomCase[] = useMemo(() => {
-    const tcs = question?.test_cases || [];
-    return tcs.slice(0, 3).map((tc: any, i: number) => ({
+    const allTcs = question?.test_cases || [];
+    const publicTcs = allTcs.filter((tc: any) => !tc.is_hidden);
+    const targetCases = publicTcs.length > 0 ? publicTcs : allTcs.slice(0, 3);
+    return targetCases.map((tc: any, i: number) => ({
       id: String(i),
       input: tc.input ?? "",
     }));
@@ -258,6 +419,8 @@ export default function QuestionPanelsClient({
 
   const [customCases, setCustomCases] = useState<CustomCase[]>([]);
   const [activeCaseId, setActiveCaseId] = useState<string>("0");
+  const [runningCaseId, setRunningCaseId] = useState<string | null>(null);
+  const [showOnlyFailed, setShowOnlyFailed] = useState<boolean>(false);
 
   // Seed once when question loads
   const seededRef = useRef(false);
@@ -276,7 +439,10 @@ export default function QuestionPanelsClient({
     output: string;
     expected: string;
     status: "correct" | "wrong" | "error" | "custom";
+    errorType?: "Compilation Error" | "Time Limit Exceeded" | "Memory Limit Exceeded" | "Runtime Error";
+    stderr?: string;
     runtime: string;
+    isFromReference?: boolean;
   };
   const [runResults, setRunResults] = useState<Record<string, RunResult>>({});
   const [submitResult, setSubmitResult] = useState<null | { verdict: string; passed: number; total: number }>(null);
@@ -314,7 +480,7 @@ export default function QuestionPanelsClient({
   };
 
   // ── Run (custom test cases) ───────────────────────────────
-  const handleRun = () => {
+  const handleRun = async () => {
     if (!requireAuth()) return;
     setShowBottom(true);
     setBottomTab("output");
@@ -323,249 +489,169 @@ export default function QuestionPanelsClient({
     setConsoleLogs([]);
     setSubmitResult(null);
 
-    setTimeout(() => {
-      if (activeLang !== "javascript") {
-        setConsoleLogs([
-          "ℹ  Browser sandbox supports JavaScript only.",
-          "   Switch to JavaScript to run your code interactively.",
-        ]);
-        setIsRunning(false);
-        return;
-      }
-      const buf: string[] = [];
-      const mock = {
-        log:   (...a: any[]) => buf.push(a.map((x: any) => typeof x === "object" ? JSON.stringify(x, null, 2) : String(x)).join(" ")),
-        error: (...a: any[]) => buf.push("[ERROR] " + a.map(String).join(" ")),
-        warn:  (...a: any[]) => buf.push("[WARN] "  + a.map(String).join(" ")),
-      };
-      try {
-        const { fn: rawFn, name } = buildRunner(code);
-        const fn = rawFn(mock);
-        if (typeof fn !== "function") throw new Error(`"${name}" is not a function.`);
+    try {
+      const cases = customCases.length ? customCases : seedCases;
+      const results: Record<string, RunResult> = {};
 
-        const results: Record<string, RunResult> = {};
-        const cases = customCases.length ? customCases : seedCases;
+      for (const tc of cases) {
+        setRunningCaseId(tc.id);
+        const res = await fetch("/api/questions/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            language: activeLang,
+            input: tc.input,
+            questionMeta: question,
+          }),
+        });
+        const data = await res.json().catch(() => ({
+          success: false,
+          error: `HTTP ${res.status}: Server execution response error`,
+        }));
 
-        for (const tc of cases) {
-          const t0 = performance.now();
-          try {
-            const args = JSON.parse("[" + tc.input + "]");
-            const actual = fn(...args);
-            const runtime = (performance.now() - t0).toFixed(1) + " ms";
-            // Try to match against DB expected if available
-            const dbCase = (question?.test_cases || []).find((d: any) => d.input === tc.input);
-            let expectedStr = dbCase?.output ?? null;
-            let status: RunResult["status"] = "custom"; // no expected output → neutral
-
-            // Generate expected output from reference solution if not predefined in DB
-            if (expectedStr === null && question?.reference_solution) {
-              try {
-                const { fn: refRawFn } = buildRunner(question.reference_solution);
-                const refFn = refRawFn({ log: () => {}, error: () => {}, warn: () => {} });
-                const refActual = refFn(...args);
-                expectedStr = refActual === undefined ? "undefined" : refActual === null ? "null" : JSON.stringify(refActual);
-              } catch (err: any) {
-                console.error("Reference solution execution failed:", err);
-              }
-            }
-
-            let expected: any = null;
-            if (expectedStr !== null) {
-              try { expected = JSON.parse(expectedStr); } catch { expected = expectedStr; }
-              status = deepEqual(actual, expected) ? "correct" : "wrong";
-            }
-            // Serialize output — handle undefined/null explicitly like LeetCode
-            const rawOutput = actual === undefined
-              ? "Your function returned undefined (missing return statement?)"
-              : actual === null
-              ? "null"
-              : JSON.stringify(actual) ?? "undefined";
-            // If function returned undefined, mark as error regardless of case type
-            if (actual === undefined) {
-              status = "error";
-            }
-            results[tc.id] = {
-              input: tc.input,
-              output: rawOutput,
-              expected: expectedStr ?? "(no expected — custom input)",
-              status,
-              runtime,
-            };
-          } catch (e: any) {
-            results[tc.id] = {
-              input: tc.input, output: `Error: ${e.message}`,
-              expected: "", status: "error", runtime: "—",
-            };
-          }
+        if (!data.success) {
+          results[tc.id] = {
+            input: tc.input,
+            output: data.error || "Server error",
+            expected: "",
+            status: "error",
+            errorType: "Runtime Error",
+            stderr: data.error || "Server error",
+            runtime: "—",
+          };
+          continue;
         }
-        setRunResults(results);
-        setConsoleLogs(buf);
-      } catch (e: any) {
-        setConsoleLogs([...buf, `[Runtime Error] ${e.message}`]);
-      } finally {
-        setIsRunning(false);
+
+        const r = data.result;
+        const actualOutput = r?.stdout ? r.stdout.trim() : "";
+        const runtime = (r?.timeMs || 0) + " ms";
+
+        // Reference solution execution result
+        const refR = data.referenceResult;
+        const refOutput = (refR && !refR.errorType && refR.stdout !== undefined) ? refR.stdout.trim() : "";
+
+        const dbCase = (question?.test_cases || []).find((d: any) => (d.input || "").trim() === tc.input.trim());
+        const dbExp = dbCase?.output !== undefined ? dbCase.output.trim() : "";
+
+        // Expected output comes from reference solution or DB test case
+        const expectedStr = refOutput || dbExp || "";
+
+        // Check if there is a compilation or runtime error in user code
+        if (r?.errorType) {
+          results[tc.id] = {
+            input: tc.input,
+            output: r.stderr || r.stdout || r.errorType,
+            expected: expectedStr,
+            status: "error",
+            errorType: r.errorType,
+            stderr: r.stderr || r.stdout || "",
+            runtime,
+          };
+          continue;
+        }
+
+        let status: RunResult["status"] = "custom";
+        if (expectedStr !== "") {
+          const isMatch = checkOutputMatch(
+            actualOutput,
+            expectedStr,
+            Boolean(question?.unordered_output),
+            tc.input,
+            question
+          );
+          status = isMatch ? "correct" : "wrong";
+        }
+
+        results[tc.id] = {
+          input: tc.input,
+          output: actualOutput,
+          expected: expectedStr,
+          status,
+          stderr: r?.stderr || "",
+          runtime,
+        };
       }
-    }, 180);
+
+      setRunResults(results);
+      const hasFailure = Object.values(results).some(r => r.status === "error" || r.status === "wrong");
+      if (hasFailure) {
+        setShowOnlyFailed(true);
+        const failingId = Object.keys(results).find(id => results[id].status === "error" || results[id].status === "wrong");
+        if (failingId) setActiveCaseId(failingId);
+        setConsoleLogs(
+          Object.values(results)
+            .filter(r => r.status === "error" || r.status === "wrong")
+            .map(r => `[${r.errorType || "Failure"}] ${r.stderr || r.output}`)
+        );
+      } else {
+        setShowOnlyFailed(false);
+      }
+    } catch (e: any) {
+      setConsoleLogs([`[Server Error] ${e.message}`]);
+    } finally {
+      setIsRunning(false);
+      setRunningCaseId(null);
+    }
   };
 
-  // ── Submit (all DB test cases) ────────────────────────────
+  // ── Submit (Secure Server-Side Evaluation) ─────────────────
   const handleSubmit = async () => {
     if (!requireAuth()) return;
     setShowBottom(true);
     setBottomTab("output");
     setIsSubmitting(true);
     setRunResults({});
-    setConsoleLogs([]);
+    setConsoleLogs(["Submitting solution for server evaluation..."]);
     setSubmitResult(null);
 
-    // Non-JS: server-side verdict
-    if (activeLang !== "javascript") {
-      try {
-        const res = await fetch("/api/questions/submit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            questionSlug: question?.slug,
-            code,
-            language: activeLang,
-            verdict: "Accepted",
-            passed: 3,
-            total: 3,
-          }),
-        });
-        const data = await res.json();
-        if (res.status === 200 || res.status === 201) {
-          setSubmitResult({ verdict: "Accepted", passed: data.total ?? 3, total: data.total ?? 3 });
-          setConsoleLogs([`[OK] Submission recorded.`, ` XP: +${data.xpGained}`, ` Level: ${data.newLevel} (${data.rank})`]);
-          toast.success(`Accepted! +${data.xpGained} XP`);
-          // Fetch updated submissions
-          fetch(`/api/questions/submit?questionSlug=${question.slug}`)
-            .then(r => r.json())
-            .then(d => { if (d.success) setSubmissions(d.submissions || []); })
-            .catch(() => {});
-        } else throw new Error(data.message || "Failed");
-      } catch (e: any) {
-        setSubmitResult({ verdict: "Error", passed: 0, total: 0 });
-        setConsoleLogs([`[ERR] ${e.message}`]);
-        toast.error(e.message || "Submission failed");
-      } finally { setIsSubmitting(false); }
-      return;
-    }
-
-    // JS: run against all DB test cases
-    const buf: string[] = [];
-    const mock = {
-      log:   (...a: any[]) => buf.push(a.map((x: any) => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ")),
-      error: (...a: any[]) => buf.push("[ERROR] " + a.map(String).join(" ")),
-      warn:  (...a: any[]) => buf.push("[WARN] "  + a.map(String).join(" ")),
-    };
     try {
-      const { fn: rawFn, name } = buildRunner(code);
-      const fn = rawFn(mock);
-      if (typeof fn !== "function") throw new Error(`"${name}" is not a function.`);
-
-      const tcs = question?.test_cases || [];
-      if (!tcs.length) throw new Error("No test cases on this question.");
-
-      let passed = 0;
-      const failLines: string[] = [];
-
-      for (let i = 0; i < tcs.length; i++) {
-        const tc = tcs[i];
-        const args = JSON.parse("[" + tc.input + "]");
-        const actual = fn(...args);
-        let expected: any;
-        try { expected = JSON.parse(tc.output); } catch { expected = tc.output; }
-        if (deepEqual(actual, expected)) {
-          passed++;
-        } else {
-          failLines.push(` Case ${i + 1} ❌`);
-          failLines.push(`   Input:    ${tc.input}`);
-          failLines.push(`   Output:   ${JSON.stringify(actual)}`);
-          failLines.push(`   Expected: ${tc.output}`);
-        }
-      }
-
-      const verdict = passed === tcs.length ? "Accepted" : "Wrong Answer";
-
-      // Always save submission to backend (Accepted or Wrong Answer)
-      try {
-        const res = await fetch("/api/questions/submit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            questionSlug: question?.slug,
-            code,
-            language: activeLang,
-            verdict,
-            passed,
-            total: tcs.length,
-          }),
-        });
-        const data = await res.json();
-
-        if (verdict === "Accepted") {
-          setSubmitResult({ verdict: "Accepted", passed, total: tcs.length });
-          if (res.status === 200 || res.status === 201) {
-            setConsoleLogs([`[OK] All ${passed}/${tcs.length} test cases passed!`, ` XP: +${data.xpGained}`, ` Level: ${data.newLevel} (${data.rank})`]);
-            toast.success(`Accepted! +${data.xpGained} XP`);
-          } else if (res.status === 401) {
-            setConsoleLogs([`[OK] All ${passed}/${tcs.length} passed! Log in to save progress.`]);
-            toast.error("Log in to save your progress!");
-          }
-        } else {
-          setSubmitResult({ verdict: "Wrong Answer", passed, total: tcs.length });
-          setConsoleLogs([` ${passed}/${tcs.length} test cases passed.`, ...failLines]);
-          toast.error(`Wrong Answer — ${passed}/${tcs.length} passed`);
-        }
-
-        // Refresh submissions list
-        fetch(`/api/questions/submit?questionSlug=${question?.slug}`)
-          .then(r => r.json())
-          .then(d => { if (d.success) setSubmissions(d.submissions || []); })
-          .catch(() => {});
-
-      } catch (fetchErr: any) {
-        // API call failed but we still show local verdict
-        if (verdict === "Accepted") {
-          setSubmitResult({ verdict: "Accepted", passed, total: tcs.length });
-          setConsoleLogs([`[OK] All ${passed}/${tcs.length} passed! (offline)`]);
-        } else {
-          setSubmitResult({ verdict: "Wrong Answer", passed, total: tcs.length });
-          setConsoleLogs([` ${passed}/${tcs.length} test cases passed.`, ...failLines]);
-          toast.error(`Wrong Answer — ${passed}/${tcs.length} passed`);
-        }
-      }
-    } catch (e: any) {
-      const runtimeVerdict = "Runtime Error";
-      setSubmitResult({ verdict: runtimeVerdict, passed: 0, total: 0 });
-      setConsoleLogs([...buf, `[Runtime Error] ${e.message}`]);
-      toast.error(e.message || "Submission failed");
-
-      // Save runtime error submission
-      fetch("/api/questions/submit", {
+      const submitRes = await fetch("/api/questions/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           questionSlug: question?.slug,
           code,
           language: activeLang,
-          verdict: runtimeVerdict,
-          passed: 0,
-          total: 0,
         }),
-      })
+      });
+      const submitData = await submitRes.json();
+
+      if (!submitData.success) {
+        throw new Error(submitData.message || "Submission failed");
+      }
+
+      const verdict = submitData.verdict || "Wrong Answer";
+      const passed = submitData.passed ?? 0;
+      const total = submitData.total ?? 0;
+      const serverLogs: string[] = submitData.logs || [];
+
+      setSubmitResult({ verdict, passed, total });
+
+      if (verdict === "Accepted") {
+        setConsoleLogs([
+          ...serverLogs,
+          `⚡ XP: +${submitData.xpGained || 0}`,
+          `🏆 Level: ${submitData.newLevel || 1} (${submitData.rank || 'Beginner'})`,
+        ]);
+        toast.success(`Accepted! +${submitData.xpGained || 0} XP 🎉`);
+      } else {
+        setConsoleLogs(serverLogs.length ? serverLogs : [`Verdict: ${verdict} — Passed ${passed}/${total}`]);
+        toast.error(`${verdict} — Passed ${passed}/${total}`);
+      }
+
+      // Refresh submissions list
+      fetch(`/api/questions/submit?questionSlug=${question.slug}`)
         .then(r => r.json())
-        .then(d => {
-          if (d.success) {
-            fetch(`/api/questions/submit?questionSlug=${question?.slug}`)
-              .then(r2 => r2.json())
-              .then(d2 => { if (d2.success) setSubmissions(d2.submissions || []); })
-              .catch(() => {});
-          }
-        })
+        .then(d => { if (d.success) setSubmissions(d.submissions || []); })
         .catch(() => {});
-    } finally { setIsSubmitting(false); }
+    } catch (e: any) {
+      setSubmitResult({ verdict: "Error", passed: 0, total: 0 });
+      setConsoleLogs([`[ERR] ${e.message}`]);
+      toast.error(e.message || "Submission failed");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // ── Derived ───────────────────────────────────────────────
@@ -897,11 +983,14 @@ export default function QuestionPanelsClient({
                   )
                 )
               )}
-              {leftTab === "editorial" && (
-                question?.reference_solution ? (
+              {leftTab === "editorial" && (() => {
+                const refLangInfo = detectLanguageFromCode(question?.reference_solution || "");
+                return question?.reference_solution ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div>
-                      <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 4px 0" }}>Reference Solution (JavaScript)</h2>
+                      <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 4px 0" }}>
+                        Reference Solution ({refLangInfo.label})
+                      </h2>
                       <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>
                         Here is the model solution for this problem. You can use it to verify your approach or debug custom inputs.
                       </p>
@@ -916,7 +1005,7 @@ export default function QuestionPanelsClient({
                         display: "flex", justifyContent: "space-between", alignItems: "center",
                         borderBottomWidth: "1px", borderBottomStyle: "solid", borderBottomColor: "#21262d",
                       }}>
-                        <span style={{ fontSize: "12px", color: "#8892b0", fontWeight: 600 }}>JavaScript</span>
+                        <span style={{ fontSize: "12px", color: "#8892b0", fontWeight: 600 }}>{refLangInfo.label}</span>
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(question.reference_solution);
@@ -943,7 +1032,7 @@ export default function QuestionPanelsClient({
                 ) : (
                   <EmptySection icon={FileText} title="Editorial Coming Soon" subtitle={`A detailed guide for "${question?.title || "this problem"}" will be available soon.`} />
                 )
-              )}
+              })()}
             </div>
           </div>
         </Panel>
@@ -1170,7 +1259,7 @@ export default function QuestionPanelsClient({
 
                       {/* Case selector sidebar */}
                       <div style={{
-                        width: "128px", flexShrink: 0,
+                        width: "140px", flexShrink: 0,
                         borderRightWidth: "1px", borderRightStyle: "solid", borderRightColor: "#1a1d2e",
                         display: "flex", flexDirection: "column",
                         overflowY: "auto", overflowX: "hidden",
@@ -1193,7 +1282,10 @@ export default function QuestionPanelsClient({
                             }}
                             className="tc-item"
                           >
-                            <span style={{ fontSize: "11.5px", fontWeight: activeCaseId === c.id ? 600 : 400 }}>Case {idx + 1}</span>
+                            <span style={{ fontSize: "11.5px", fontWeight: activeCaseId === c.id ? 600 : 400 }}>
+                              Case {idx + 1}
+                              {runningCaseId === c.id && <span style={{ marginLeft: "4px", color: "#60a5fa", fontSize: "10px" }}>⚡</span>}
+                            </span>
                             {customCases.length > 1 && (
                               <button
                                 onClick={e => { e.stopPropagation(); removeCase(c.id); }}
@@ -1222,37 +1314,38 @@ export default function QuestionPanelsClient({
                       {/* Case input textarea — scrolls independently */}
                       <div style={{
                         flex: 1, display: "flex", flexDirection: "column",
-                        padding: "10px 14px", overflow: "hidden",
+                        padding: "10px 14px", overflowY: "auto",
+                        scrollbarWidth: "thin", scrollbarColor: "#21262d transparent",
                       }}>
                         {activeCase ? (
-                          <>
+                          <div style={{ display: "flex", flexDirection: "column", flex: 1, height: "100%" }}>
                             <div style={{
                               fontSize: "10px", fontWeight: 700, color: "#4ec9b0",
-                              textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.07em",
+                              textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.07em",
                             }}>Input:</div>
                             <textarea
                               value={activeCase.input}
                               onChange={e => updateCaseInput(activeCase.id, e.target.value)}
                               spellCheck={false}
-                              placeholder="Type your custom input here…"
+                              placeholder="Type your custom test case input here…"
                               style={{
                                 flex: 1,
-                                resize: "none",
+                                minHeight: "120px",
+                                resize: "vertical",
                                 backgroundColor: "#161b22",
                                 borderWidth: "1px", borderStyle: "solid", borderColor: "#21262d",
                                 borderRadius: "6px",
                                 color: "#e6edf3",
                                 fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
-                                fontSize: "12.5px", lineHeight: "1.7",
-                                padding: "8px 10px",
+                                fontSize: "12px", lineHeight: "1.6",
+                                padding: "8px 12px",
                                 outline: "none",
                                 overflowY: "auto",
                                 transition: "border-color 0.15s, box-shadow 0.15s",
-                                scrollbarWidth: "thin", scrollbarColor: "#21262d transparent",
                               }}
                               className="tc-textarea"
                             />
-                          </>
+                          </div>
                         ) : (
                           <div style={{ color: "#576078", fontSize: "12px", fontStyle: "italic", paddingTop: "8px" }}>No test cases.</div>
                         )}
@@ -1291,13 +1384,68 @@ export default function QuestionPanelsClient({
                         </div>
                       )}
 
+                      {/* Filter Header if failure results exist */}
+                      {Object.keys(runResults).length > 0 && Object.values(runResults).some(r => r.status === "error" || r.status === "wrong") && (
+                        <div style={{
+                          display: "flex", justifyContent: "space-between", alignItems: "center",
+                          marginBottom: "8px", paddingBottom: "4px", borderBottom: "1px solid #1a1d2e"
+                        }}>
+                          <span style={{ fontSize: "11px", color: "#f87171", fontWeight: 600 }}>
+                            ⚠️ Showing Failing Testcases ({Object.values(runResults).filter(r => r.status === "error" || r.status === "wrong").length})
+                          </span>
+                          <button
+                            onClick={() => setShowOnlyFailed(p => !p)}
+                            style={{
+                              backgroundColor: showOnlyFailed ? "rgba(239,68,68,0.15)" : "#161b22",
+                              border: `1px solid ${showOnlyFailed ? "rgba(239,68,68,0.4)" : "#30363d"}`,
+                              color: showOnlyFailed ? "#f87171" : "#8b949e",
+                              borderRadius: "4px", padding: "2px 8px", fontSize: "10.5px",
+                              cursor: "pointer", display: "flex", alignItems: "center", gap: "4px"
+                            }}
+                          >
+                            {showOnlyFailed ? "Show All Cases" : "Show Failed Only"}
+                          </button>
+                        </div>
+                      )}
+
                       {/* Per-case result cards */}
-                      {Object.keys(runResults).length > 0 && customCases.map((c, idx) => {
+                      {Object.keys(runResults).length > 0 && customCases
+                        .filter(c => {
+                          if (!showOnlyFailed) return true;
+                          const r = runResults[c.id];
+                          return r && (r.status === "error" || r.status === "wrong");
+                        })
+                        .map((c, idx) => {
                         const r = runResults[c.id];
+                        const isCurrentlyRunning = runningCaseId === c.id;
+
+                        if (isCurrentlyRunning) {
+                          return (
+                            <div key={c.id} style={{
+                              marginBottom: "8px", padding: "10px 12px", borderRadius: "6px",
+                              backgroundColor: "rgba(59,130,246,0.05)",
+                              borderWidth: "1px", borderStyle: "solid", borderColor: "rgba(59,130,246,0.2)",
+                            }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={{ fontSize: "11px", fontWeight: 700, color: "#60a5fa" }}>Case {idx + 1}</span>
+                                <span style={{ fontSize: "11px", color: "#93c5fd" }}>⚡ Running inside Docker sandbox...</span>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         if (!r) return null;
                         const isCorrect = r.status === "correct";
                         const isError   = r.status === "error";
                         const isCustom  = r.status === "custom";
+                        const badgeText = isError
+                          ? `❌ ${r.errorType || "Error"}`
+                          : isCustom
+                          ? "⚡ Ran"
+                          : isCorrect
+                          ? "✅ Accepted"
+                          : "❌ Wrong Answer";
+
                         return (
                           <div key={c.id} style={{
                             marginBottom: "8px", padding: "10px 12px", borderRadius: "6px",
@@ -1308,19 +1456,52 @@ export default function QuestionPanelsClient({
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
                               <span style={{ fontSize: "11px", fontWeight: 700, color: "#576078" }}>Case {idx + 1}</span>
                               <span style={{ fontSize: "11px", fontWeight: 700, color: isError ? "#f87171" : isCustom ? "#63b3ed" : isCorrect ? "#4ade80" : "#f87171" }}>
-                                {isError ? "❌ Error" : isCustom ? "⚡ Ran" : isCorrect ? "✅ Accepted" : "❌ Wrong Answer"}
+                                {badgeText}
                               </span>
                             </div>
-                            <div style={{ fontSize: "12px", color: "#8892b0", display: "flex", flexDirection: "column", gap: "2px" }}>
+
+                            <div style={{ fontSize: "12px", color: "#8892b0", display: "flex", flexDirection: "column", gap: "3px" }}>
                               <div><span style={{ color: "#4ec9b0" }}>Input:    </span>{r.input}</div>
-                              <div>
-                                <span style={{ color: "#4ec9b0" }}>Output:   </span>
-                                <span style={{ color: isError ? "#f87171" : isCustom ? "#e6edf3" : isCorrect ? "#4ade80" : "#f87171" }}>
-                                  {r.output || <span style={{ color: "#576078", fontStyle: "italic" }}>— no output —</span>}
-                                </span>
-                              </div>
-                              {r.expected && !isCustom && <div><span style={{ color: "#4ec9b0" }}>Expected: </span><span style={{ color: "#c9d1d9" }}>{r.expected}</span></div>}
-                              {isCustom && <div style={{ color: "#576078", fontStyle: "italic", fontSize: "11px" }}>Custom input — no expected output</div>}
+
+                              {isError ? (
+                                <div style={{
+                                  marginTop: "4px",
+                                  padding: "8px 10px",
+                                  borderRadius: "5px",
+                                  backgroundColor: "#11141f",
+                                  border: "1px solid #2b3047",
+                                  color: "#f87171",
+                                  fontSize: "11.5px",
+                                  fontFamily: "ui-monospace, Consolas, monospace",
+                                  whiteSpace: "pre-wrap",
+                                  wordBreak: "break-word",
+                                  maxHeight: "200px",
+                                  overflowY: "auto",
+                                }}>
+                                  <div style={{ fontWeight: 600, color: "#ef4444", marginBottom: "4px" }}>
+                                    {r.errorType || "Error Log"}:
+                                  </div>
+                                  {r.stderr || r.output || "Execution failed with non-zero exit code"}
+                                </div>
+                              ) : (
+                                <>
+                                  <div>
+                                    <span style={{ color: "#4ec9b0" }}>Output:   </span>
+                                    <span style={{ color: isCustom ? "#e6edf3" : isCorrect ? "#4ade80" : "#f87171" }}>
+                                      {r.output || <span style={{ color: "#576078", fontStyle: "italic" }}>— no output —</span>}
+                                    </span>
+                                  </div>
+                                  {r.expected ? (
+                                    <div>
+                                      <span style={{ color: "#4ec9b0" }}>Expected: </span>
+                                      <span style={{ color: "#c9d1d9" }}>{r.expected}</span>
+                                    </div>
+                                  ) : (
+                                    <div style={{ color: "#576078", fontStyle: "italic", fontSize: "11px" }}>No reference output generated</div>
+                                  )}
+                                </>
+                              )}
+
                               <div style={{ color: "#3a3f55", marginTop: "2px" }}>Runtime: {r.runtime}</div>
                             </div>
                           </div>
