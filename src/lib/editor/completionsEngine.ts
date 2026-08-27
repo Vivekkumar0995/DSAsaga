@@ -149,22 +149,22 @@ export function extractIdentifiers(code: string): { name: string; kind: "variabl
   const ids: { name: string; kind: "variable" | "function" }[] = [];
   const seen = new Set<string>();
 
-  // Extract function declarations: e.g. function funcName(...) or const func = (...) =>
-  const funcRegex = /\b(?:function\s+([a-zA-Z_$][a-zA-Z0-9_$]*))|(?:\b(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>)/g;
-  let match;
+  // Extract function declarations: JS function, arrow functions, Python defs, C/C++/Java functions
+  const funcRegex = /\b(?:def|function)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)|(?:\b(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>)|\b(?:int|void|double|float|bool|string|vector<[a-zA-Z_<>]*>|List<[a-zA-Z_<>]*>)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/g;
+  let match: RegExpExecArray | null;
   while ((match = funcRegex.exec(code)) !== null) {
-    const name = match[1] || match[2];
-    if (name && !seen.has(name)) {
+    const name = match[1] || match[2] || match[3];
+    if (name && !seen.has(name) && !["if", "for", "while", "switch", "return"].includes(name)) {
       seen.add(name);
       ids.push({ name, kind: "function" });
     }
   }
 
-  // Extract variable declarations: e.g. const varName, let varName, int varName, etc.
-  const varRegex = /\b(?:const|let|var|int|float|double|char|bool|auto|vector<[a-zA-Z_<>]+>)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g;
+  // Extract variable declarations: JS, Python (name = val), C/C++/Java type var
+  const varRegex = /\b(?:const|let|var|int|float|double|char|bool|auto|vector<[a-zA-Z_<>]*>|List<[a-zA-Z_<>]*>)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\b|\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*[^=]/g;
   while ((match = varRegex.exec(code)) !== null) {
-    const name = match[1];
-    if (name && !seen.has(name) && name !== "function") {
+    const name = match[1] || match[2];
+    if (name && !seen.has(name) && !["function", "def", "if", "for", "while", "return", "class", "import", "const", "let", "var", "self"].includes(name)) {
       seen.add(name);
       ids.push({ name, kind: "variable" });
     }

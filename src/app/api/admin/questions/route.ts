@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     await connectDB();
-    const { slug, reference_solution, test_cases } = await req.json();
+    const body = await req.json();
+    const { slug, reference_solution, test_cases } = body;
 
     if (!slug) {
       return NextResponse.json(
@@ -88,6 +89,9 @@ export async function PATCH(req: NextRequest) {
         is_hidden: Boolean(tc.is_hidden),
       }));
     }
+    if (body.time_limit_ms !== undefined) updateFields.time_limit_ms = Number(body.time_limit_ms);
+    if (body.memory_limit_mb !== undefined) updateFields.memory_limit_mb = Number(body.memory_limit_mb);
+    if (body.unordered_output !== undefined) updateFields.unordered_output = Boolean(body.unordered_output);
 
     if (Object.keys(updateFields).length === 0) {
       return NextResponse.json(

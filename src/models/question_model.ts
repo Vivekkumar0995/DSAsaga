@@ -98,6 +98,18 @@ const questionSchema = new Schema({
         type: String,
         default: "",
     },
+    time_limit_ms: {
+        type: Number,
+        default: 2000,
+    },
+    memory_limit_mb: {
+        type: Number,
+        default: 256,
+    },
+    unordered_output: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 const Question = models.Question || model('Question', questionSchema);

@@ -31,6 +31,14 @@ const submissionSchema = new Schema({
         type: Number,
         required: true,
     },
+    score: {
+        type: Number,
+        default: 0,
+    },
+    executionTimeMs: {
+        type: Number,
+        default: 0,
+    },
 }, { timestamps: true });
 
 const Submission = models.Submission || model('Submission', submissionSchema);
