@@ -1,101 +1,174 @@
 // src/app/[data_structure]/battle/[roomId]/page.tsx
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { socket } from '@/lib/socket';
-// FIX 1: Import the correctly named type from your types file
-import { OpponentProgressPayload } from '@/types/battle';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { socket } from "@/lib/socket";
+import { OpponentProgressPayload } from "@/types/battle";
+import QuestionPanelsClient from "@/components/practice/QuestionPanelsClient";
 
 export default function BattleArena() {
-    const params = useParams();
-    // FIX 3: Force roomId to be a string (handles Next.js array types)
-    const roomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
+  const params = useParams();
+  const roomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
+  const dataStructure = Array.isArray(params.data_structure) ? params.data_structure[0] : (params.data_structure || "arrays");
 
-    // FIX 1 applied to the generic type
-    const [opponent, setOpponent] = useState<OpponentProgressPayload>({
-        senderId: '',
-        passCount: 0,
-        totalTests: 5,
-        isCompleted: false,
+  const [questionsList, setQuestionsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [opponent, setOpponent] = useState<OpponentProgressPayload>({
+    senderId: "",
+    passCount: 0,
+    totalTests: 4,
+    questionsSolved: 0,
+    totalQuestions: 4,
+    isCompleted: false,
+    name: "Opponent",
+  });
+  const [winner, setWinner] = useState<string | null>(null);
+  const [matchOutcome, setMatchOutcome] = useState<{
+    type: 'win' | 'loss';
+    reason: string;
+    message: string;
+  } | null>(null);
+
+  // Fetch 4 dynamic questions from database for 1.5 hr contest
+  useEffect(() => {
+    async function loadBattleQuestions() {
+      try {
+        const randomRes = await fetch("/api/questions/random");
+        const randomData = await randomRes.json();
+        
+        if (randomData.success && randomData.questions && randomData.questions.length > 0) {
+          setQuestionsList(randomData.questions);
+        } else {
+          const dsRes = await fetch(`/api/questions?dsSlug=${dataStructure}`);
+          const dsData = await dsRes.json();
+          if (dsData.success && dsData.questions) {
+            setQuestionsList(dsData.questions.slice(0, 4));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load battle questions:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBattleQuestions();
+  }, [dataStructure]);
+
+  // Socket connection & handlers for all 4 win/loss cases
+  useEffect(() => {
+    if (!roomId) return;
+    
+    socket.connect();
+    socket.emit("joinBattleRoom", { roomId });
+
+    socket.on("opponentProgress", (data: OpponentProgressPayload) => {
+      setOpponent(data);
     });
-    const [winner, setWinner] = useState<string | null>(null);
 
-    useEffect(() => {
-        socket.connect();
-
-        // Use the correct type here
-        socket.on('opponentProgress', (data: OpponentProgressPayload) => {
-            setOpponent(data);
+    // Rule 2, 3, 4: Battle Ended Event
+    socket.on("battleEnded", ({ winnerId, winnerName, reason, message }: any) => {
+      setWinner(winnerName);
+      const myUsername = (socket.auth as any)?.username;
+      const isMe = (winnerName && myUsername && winnerName === myUsername) || socket.id === winnerId;
+      if (isMe) {
+        setMatchOutcome({
+          type: 'win',
+          reason: reason || 'completed_all_questions',
+          message: message || `🏆 VICTORY! You won the match!`
         });
-
-        socket.on('battleEnded', ({ winnerName }: { winnerName: string }) => {
-            setWinner(winnerName);
+      } else {
+        setMatchOutcome({
+          type: 'loss',
+          reason: reason || 'completed_all_questions',
+          message: message || `❌ DEFEAT! ${winnerName || 'Opponent'} won the match.`
         });
+      }
+    });
 
-        return () => {
-            socket.off('opponentProgress');
-            socket.off('battleEnded');
-            socket.disconnect(); // Good practice to disconnect when leaving the page
-        };
-    }, []);
-
-    const handleTestSubmit = (passed: number, total: number) => {
-        const isCompleted = passed === total;
-        socket.emit('submitAttempt', {
-            roomId,
-            passCount: passed,
-            totalTests: total,
-            isCompleted,
+    // Rule 1: Opponent Disconnection / Forfeit Handler
+    socket.on("opponentDisconnected", ({ message, winnerId, winnerName, reason }: any) => {
+      const myUsername = (socket.auth as any)?.username;
+      const isMe = (winnerName && myUsername && winnerName === myUsername) || socket.id === winnerId;
+      if (isMe) {
+        setWinner(winnerName || "You (by forfeit)");
+        setMatchOutcome({
+          type: 'win',
+          reason: 'opponent_forfeit',
+          message: message || 'Opponent backed out or left the match! You win by forfeit!'
         });
+      } else {
+        setMatchOutcome({
+          type: 'loss',
+          reason: 'forfeit',
+          message: 'You backed out of the match.'
+        });
+      }
+    });
+
+    return () => {
+      socket.off("opponentProgress");
+      socket.off("battleEnded");
+      socket.off("opponentDisconnected");
+    };
+  }, [roomId]);
+
+  // Handle browser back button / window close / pagehide away from battle page
+  useEffect(() => {
+    if (!roomId) return;
+
+    const handleUnload = () => {
+      socket.emit("leaveMatch", { roomId });
     };
 
-    // FIX 2: Safely calculate percentage to prevent NaN% crashes
-    const progressPercentage = opponent.totalTests > 0
-        ? (opponent.passCount / opponent.totalTests) * 100
-        : 0;
+    window.addEventListener("beforeunload", handleUnload);
+    window.addEventListener("pagehide", handleUnload);
 
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      window.removeEventListener("pagehide", handleUnload);
+    };
+  }, [roomId]);
+
+  const handleTestSubmit = (passed: number, total: number, questionsSolvedCount = 0) => {
+    const isCompleted = questionsSolvedCount >= 4;
+    socket.emit("submitAttempt", {
+      roomId,
+      passCount: passed,
+      totalTests: total,
+      questionsSolved: questionsSolvedCount,
+      totalQuestions: 4,
+      isCompleted,
+    });
+  };
+
+  const handleTimeExpired = () => {
+    socket.emit("timeExpired", { roomId });
+  };
+
+  if (loading) {
     return (
-        <div className="min-h-screen bg-gray-950 text-white p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Code Editor Side */}
-            <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl flex flex-col justify-between">
-                <div>
-                    <h2 className="text-xl font-bold mb-4">Your Code Editor</h2>
-                    <p className="text-gray-400 text-sm">Room ID: <span className="font-mono text-yellow-400">{roomId}</span></p>
-                </div>
-
-                {winner ? (
-                    <div className="bg-emerald-900/50 border border-emerald-500 p-4 rounded-lg text-center font-bold text-lg text-emerald-300">
-                        🏆 Winner: {winner}!
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => handleTestSubmit(5, 5)}
-                        className="bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg font-bold transition mt-6"
-                    >
-                        Simulate Full Submit (5/5 Tests Passed)
-                    </button>
-                )}
-            </div>
-
-            {/* Opponent Real-time Tracker */}
-            <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl space-y-4">
-                <h2 className="text-xl font-bold">Live Opponent Status</h2>
-
-                <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                        <span>Tests Passed</span>
-                        <span className="font-mono text-blue-400">{opponent.passCount} / {opponent.totalTests}</span>
-                    </div>
-
-                    <div className="w-full bg-gray-800 h-4 rounded-full overflow-hidden">
-                        <div
-                            className="bg-blue-500 h-full transition-all duration-300"
-                            style={{ width: `${progressPercentage}%` }} // FIX 2 applied here
-                        />
-                    </div>
-                </div>
-            </div>
+      <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center font-sans">
+        <div className="flex items-center gap-3 text-slate-700 font-semibold text-sm bg-white p-6 rounded-2xl border border-slate-200 shadow-md">
+          <div className="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+          <span>Preparing 1.5 Hr Contest & Matching Opponent...</span>
         </div>
+      </div>
     );
+  }
+
+  return (
+    <QuestionPanelsClient
+      questionsList={questionsList}
+      dataStructure={dataStructure}
+      battleMode={true}
+      opponent={opponent}
+      winner={winner}
+      matchOutcome={matchOutcome}
+      roomId={roomId}
+      onBattleSubmit={handleTestSubmit}
+      onTimeExpired={handleTimeExpired}
+    />
+  );
 }

@@ -263,7 +263,7 @@ export default function LeaderboardPage() {
             id="searchInput"
             type="text"
             placeholder="Search by name or handle..."
-y            value={searchQuery}
+             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoComplete="off"
             className="flex-1 bg-transparent border-none outline-none text-slate-900 dark:text-[#E3E6EC] placeholder-slate-400 dark:placeholder-[#4D5468]"

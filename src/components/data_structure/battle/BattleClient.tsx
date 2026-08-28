@@ -278,55 +278,55 @@ export default function BattleClient({
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
+    <div className="min-h-screen bg-[#F8F9FB] text-slate-900 pt-28 pb-16 px-4 sm:px-8 font-sans">
       {/* Stats Header */}
-      <div className="max-w-4xl mx-auto mb-8 grid grid-cols-4 gap-4 bg-gray-900 p-4 rounded-xl border border-gray-800 text-center">
+      <div className="max-w-4xl mx-auto mb-8 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-white p-5 rounded-2xl border border-slate-200/90 text-center shadow-xs">
         <div>
-          <p className="text-gray-400 text-xs">Rating</p>
-          <p className="text-xl font-bold">{battle_stats.rating}</p>
+          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Rating</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1">{battle_stats.rating}</p>
         </div>
         <div>
-          <p className="text-gray-400 text-xs">Win Rate</p>
-          <p className="text-xl font-bold">{battle_stats.win_rate}%</p>
+          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Win Rate</p>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">{battle_stats.win_rate}%</p>
         </div>
         <div>
-          <p className="text-gray-400 text-xs">Total Battles</p>
-          <p className="text-xl font-bold">{battle_stats.battles}</p>
+          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Battles</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1">{battle_stats.battles}</p>
         </div>
         <div>
-          <p className="text-gray-400 text-xs">Win Streak</p>
-          <p className="text-xl font-bold">{battle_stats.win_streak}</p>
+          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Win Streak</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{battle_stats.win_streak}</p>
         </div>
       </div>
 
       {/* Main Lobby Actions */}
       <div className="max-w-md mx-auto space-y-6">
-        <h1 className="text-3xl font-extrabold text-center capitalize">
+        <h1 className="text-3xl font-extrabold text-center text-slate-900 capitalize tracking-tight">
           {ds_param} 1v1 Arena
         </h1>
 
         {errorMessage && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded-lg text-sm text-center">
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3.5 rounded-xl text-sm text-center font-medium shadow-xs">
             {errorMessage}
           </div>
         )}
 
         {/* Random 1v1 Matchmaking Card */}
-        <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 space-y-4">
-          <h2 className="text-xl font-bold">1v1 Random Match</h2>
-          <p className="text-gray-400 text-sm">Find an online opponent in {ds_param}.</p>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/90 space-y-4 shadow-xs">
+          <h2 className="text-xl font-bold text-slate-900">1v1 Random Match</h2>
+          <p className="text-slate-500 text-sm">Match with an online opponent in real-time {ds_param} duel.</p>
 
           {isSearching ? (
             <button
               onClick={handleCancelMatch}
-              className="w-full bg-red-600 hover:bg-red-500 py-3 rounded-lg font-bold transition animate-pulse"
+              className="w-full bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-xl font-bold transition-all shadow-sm animate-pulse cursor-pointer"
             >
-              Searching... (Click to Cancel)
+              Finding Opponent... (Click to Cancel)
             </button>
           ) : (
             <button
               onClick={handleRandomMatch}
-              className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold transition"
+              className="w-full bg-teal-600 hover:bg-teal-500 text-white py-3 rounded-xl font-bold transition-all shadow-sm cursor-pointer"
             >
               Find Match
             </button>
@@ -334,20 +334,20 @@ export default function BattleClient({
         </div>
 
         {/* Private Custom Friend Invite Card */}
-        <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 space-y-4">
-          <h2 className="text-xl font-bold">Custom Battle with Friend</h2>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/90 space-y-4 shadow-xs">
+          <h2 className="text-xl font-bold text-slate-900">Custom Battle with Friend</h2>
 
           <button
             onClick={handleCreateCustom}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg font-bold transition"
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition-all shadow-sm cursor-pointer"
           >
             Create Invite Room
           </button>
 
           <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-gray-800"></div>
-            <span className="flex-shrink mx-4 text-gray-500 text-xs uppercase">Or Join with Code</span>
-            <div className="flex-grow border-t border-gray-800"></div>
+            <div className="flex-grow border-t border-slate-200"></div>
+            <span className="flex-shrink mx-4 text-slate-400 text-xs font-semibold uppercase tracking-wider">Or Join with Code</span>
+            <div className="flex-grow border-t border-slate-200"></div>
           </div>
 
           <div className="flex gap-2">
@@ -356,11 +356,11 @@ export default function BattleClient({
               placeholder="Enter Code (e.g. DSA-7K9)"
               value={joinCodeInput}
               onChange={(e) => setJoinCodeInput(e.target.value)}
-              className="flex-1 bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg font-mono text-sm focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-slate-50 border border-slate-200 px-3.5 py-2.5 rounded-xl font-mono text-sm text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white transition-colors"
             />
             <button
               onClick={handleJoinCustom}
-              className="bg-purple-600 hover:bg-purple-500 px-5 py-2 rounded-lg font-bold text-sm transition"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer"
             >
               Join
             </button>

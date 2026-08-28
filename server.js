@@ -108,9 +108,15 @@ app.prepare().then(() => {
                 p2.currentRoom = roomId;
 
                 activeMatches.set(roomId, {
-                    players: new Set([p1.id, p2.id]),
+                    roomId,
                     state: 'ACTIVE',
-                    topic: sanitizedTopic
+                    topic: sanitizedTopic,
+                    startTime: Date.now(),
+                    players: new Map([
+                        [p1.userData.username, { username: p1.userData.username, socketId: p1.id }],
+                        [p2.userData.username, { username: p2.userData.username, socketId: p2.id }]
+                    ]),
+                    playerProgress: new Map()
                 });
 
                 io.to(roomId).emit('battleStart', {
@@ -177,9 +183,15 @@ app.prepare().then(() => {
             const topic = hostSocket?.customTopic || 'general';
 
             activeMatches.set(cleanCode, {
-                players: new Set(roomSockets),
+                roomId: cleanCode,
                 state: 'ACTIVE',
-                topic
+                topic,
+                startTime: Date.now(),
+                players: new Map(roomSockets.map(id => {
+                    const uName = io.sockets.sockets.get(id)?.userData?.username || 'Player';
+                    return [uName, { username: uName, socketId: id }];
+                })),
+                playerProgress: new Map()
             });
 
             io.to(cleanCode).emit('battleStart', {
@@ -193,59 +205,199 @@ app.prepare().then(() => {
             });
         });
 
-        // Progress Tracking
-        socket.on('submitAttempt', ({ roomId, passCount, totalTests, isCompleted }) => {
+        // Progress Tracking & Real-time Submission Updates
+        socket.on('submitAttempt', ({ roomId, passCount, totalTests, questionsSolved = 0, totalQuestions = 4, isCompleted, timeTakenMs }) => {
             if (isRateLimited(socket, 20, 5000)) return;
-            if (typeof roomId !== 'string' || !Number.isInteger(passCount) || !Number.isInteger(totalTests) || typeof isCompleted !== 'boolean') {
-                return;
-            }
+            if (typeof roomId !== 'string') return;
 
             const match = activeMatches.get(roomId);
-            if (!match || !match.players.has(socket.id) || match.state !== 'ACTIVE') {
+            if (!match || !match.players.has(socket.userData.username) || match.state !== 'ACTIVE') {
                 return;
             }
 
-            const safePassCount = Math.max(0, Math.min(passCount, totalTests));
+            const safePassCount = Math.max(0, Math.min(passCount || 0, totalTests || 5));
+            const safeQuestionsSolved = Math.max(0, Math.min(questionsSolved || 0, totalQuestions));
+            const elapsedTime = timeTakenMs || (Date.now() - (match.startTime || Date.now()));
 
+            match.playerProgress.set(socket.id, {
+                passCount: safePassCount,
+                totalTests: totalTests || 5,
+                questionsSolved: safeQuestionsSolved,
+                totalQuestions,
+                timeTakenMs: elapsedTime,
+                name: socket.userData.username
+            });
+
+            // Broadcast real-time progress to opponent
             socket.to(roomId).emit('opponentProgress', {
                 senderId: socket.id,
                 passCount: safePassCount,
-                totalTests,
-                isCompleted
+                totalTests: totalTests || 5,
+                questionsSolved: safeQuestionsSolved,
+                totalQuestions,
+                isCompleted: isCompleted || (safeQuestionsSolved >= totalQuestions),
+                name: socket.userData.username
             });
 
-            if (isCompleted && safePassCount === totalTests) {
+            // Rule 2: If a player completed all 4 questions, declare immediate winner
+            if (isCompleted || safeQuestionsSolved >= totalQuestions) {
                 match.state = 'ENDED';
 
                 io.to(roomId).emit('battleEnded', {
                     winnerId: socket.id,
-                    winnerName: socket.userData.username
+                    winnerName: socket.userData.username,
+                    reason: 'completed_all_questions',
+                    message: `${socket.userData.username} solved all ${totalQuestions} questions first!`
                 });
 
                 setTimeout(() => activeMatches.delete(roomId), 10000);
             }
         });
 
+        // Handle Contest Time Expired (Rule 3 & Rule 4)
+        socket.on('timeExpired', ({ roomId }) => {
+            const match = activeMatches.get(roomId);
+            if (!match || match.state !== 'ACTIVE') return;
+
+            match.state = 'ENDED';
+            const players = Array.from(match.players);
+            if (players.length === 0) return;
+
+            let winnerId = players[0];
+            let reason = 'time_expired_most_questions';
+            let message = 'Contest time expired!';
+
+            if (players.length >= 2) {
+                const p1 = players[0];
+                const p2 = players[1];
+                const prog1 = match.playerProgress.get(p1) || { questionsSolved: 0, passCount: 0, timeTakenMs: 99999999 };
+                const prog2 = match.playerProgress.get(p2) || { questionsSolved: 0, passCount: 0, timeTakenMs: 99999999 };
+
+                // Rule 3: Compare questions solved / tests passed
+                if (prog1.questionsSolved > prog2.questionsSolved) {
+                    winnerId = p1;
+                    reason = 'time_expired_most_questions';
+                    message = 'Time expired! Won by solving the most questions!';
+                } else if (prog2.questionsSolved > prog1.questionsSolved) {
+                    winnerId = p2;
+                    reason = 'time_expired_most_questions';
+                    message = 'Time expired! Won by solving the most questions!';
+                } else if (prog1.passCount > prog2.passCount) {
+                    winnerId = p1;
+                    reason = 'time_expired_most_questions';
+                    message = 'Time expired! Won by passing the most test cases!';
+                } else if (prog2.passCount > prog1.passCount) {
+                    winnerId = p2;
+                    reason = 'time_expired_most_questions';
+                    message = 'Time expired! Won by passing the most test cases!';
+                } else {
+                    // Rule 4: Tie-breaker by faster time taken
+                    winnerId = prog1.timeTakenMs <= prog2.timeTakenMs ? p1 : p2;
+                    reason = 'time_expired_faster_time';
+                    message = 'Time expired! Tied on questions, but won with a faster completion time!';
+                }
+            }
+
+            const winnerSocket = io.sockets.sockets.get(winnerId);
+            const winnerName = winnerSocket?.userData?.username || 'Player';
+
+            io.to(roomId).emit('battleEnded', {
+                winnerId,
+                winnerName,
+                reason,
+                message
+            });
+
+            setTimeout(() => activeMatches.delete(roomId), 10000);
+        });
+
+        // Join Battle Room Event (re-attaches room ID on page load)
+        socket.on('joinBattleRoom', ({ roomId }) => {
+            if (!roomId || typeof roomId !== 'string') return;
+            socket.currentRoom = roomId;
+            socket.join(roomId);
+
+            let match = activeMatches.get(roomId);
+            if (!match) {
+                match = {
+                    roomId,
+                    players: new Map(),
+                    state: 'ACTIVE',
+                    startTime: Date.now(),
+                    playerProgress: new Map()
+                };
+                activeMatches.set(roomId, match);
+            }
+            const username = socket.userData.username || 'Player';
+            if (match.players instanceof Map) {
+                match.players.set(username, { username, socketId: socket.id });
+            } else {
+                match.players = new Map([[username, { username, socketId: socket.id }]]);
+            }
+            console.log(`[Battle Arena Joined]: ${username} (${socket.id}) in room ${roomId}`);
+        });
+
+        // Helper: Handle Player Leave / Forfeit
+        const handlePlayerLeave = (sock, targetRoomId) => {
+            const roomId = targetRoomId || sock.currentRoom;
+            if (!roomId) return;
+
+            const match = activeMatches.get(roomId);
+            if (match && match.state === 'ACTIVE') {
+                const leavingUsername = sock.userData.username;
+                let remainingUsername = null;
+                let remainingSocketId = null;
+
+                if (match.players instanceof Map) {
+                    for (const [uname, pData] of match.players) {
+                        if (uname !== leavingUsername) {
+                            remainingUsername = uname;
+                            remainingSocketId = pData.socketId;
+                            break;
+                        }
+                    }
+                }
+
+                // Only declare forfeit if opponent was registered in the match
+                if (!remainingUsername) {
+                    console.log(`[Battle Leave Skipped]: ${leavingUsername} left room ${roomId} before opponent connected.`);
+                    return;
+                }
+
+                match.state = 'ENDED';
+                const winnerName = remainingUsername;
+                const winnerId = remainingSocketId;
+
+                console.log(`[Battle Forfeit Triggered]: ${leavingUsername} left room ${roomId}. Winner: ${winnerName} (${winnerId})`);
+
+                io.to(roomId).emit('battleEnded', {
+                    winnerId,
+                    winnerName,
+                    reason: 'opponent_forfeit',
+                    message: `${leavingUsername} backed out / left the match. ${winnerName} wins by forfeit!`
+                });
+
+                sock.to(roomId).emit('opponentDisconnected', {
+                    message: `${leavingUsername} left the match. ${winnerName} wins by forfeit!`,
+                    winnerId,
+                    winnerName,
+                    reason: 'opponent_forfeit'
+                });
+
+                setTimeout(() => activeMatches.delete(roomId), 15000);
+            }
+        };
+
+        // Explicit Leave / Back Button Forfeit Handler
+        socket.on('leaveMatch', ({ roomId }) => {
+            handlePlayerLeave(socket, roomId);
+        });
+
         // Disconnect Handler
         socket.on('disconnect', () => {
             console.log(`[Socket Disconnected]: ${socket.id}`);
             removeFromQueues(socket);
-
-            if (socket.currentRoom) {
-                const roomId = socket.currentRoom;
-                const match = activeMatches.get(roomId);
-
-                if (match && match.state === 'ACTIVE') {
-                    match.state = 'ENDED';
-
-                    socket.to(roomId).emit('opponentDisconnected', {
-                        message: `${socket.userData.username} disconnected. You win by forfeit!`,
-                        winnerId: Array.from(match.players).find(id => id !== socket.id)
-                    });
-
-                    setTimeout(() => activeMatches.delete(roomId), 5000);
-                }
-            }
+            handlePlayerLeave(socket, socket.currentRoom);
         });
     });
 
