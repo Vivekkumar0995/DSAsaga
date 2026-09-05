@@ -1,169 +1,3 @@
-// "use client"
-
-// import { useState } from "react"
-// import { motion, AnimatePresence } from "framer-motion"
-// import { Swords, Trophy, Clock, Target, Play, Flame } from "lucide-react"
-// import { getSafeIconName, spacedToSnakeCase } from "@/lib/utils"
-// import { Data_Structure_Props } from "@/types/data_structure"
-// import { DynamicIcon } from "lucide-react/dynamic"
-
-
-// export default function BattleClient({ ds_param, battle_stats, battle_modes, recent_matches }: Data_Structure_Props) {
-//   const [selectedMode, setSelectedMode] = useState<string | null>(null);
-//   const [isSearching, setIsSearching] = useState(false);
-
-//   const handleStartBattle = (modeId: string) => {
-//     setSelectedMode(modeId);
-//     setIsSearching(true);
-
-//     // Simulate matchmaking
-//     setTimeout(() => {
-//       setIsSearching(false);
-//     }, 3000)
-//   }
-
-//   return (
-//     <div className="array-battle-theme min-h-screen bg-white text-black">
-//       <main className="relative z-10 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-//         <div className="max-w-6xl mx-auto">
-//           {/* Header */}
-//           <div className="mb-12">
-//             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-//               <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-//                 Battle <span className="text-[#14b8a6]">Arena</span>
-//               </h1>
-//               <p className="text-gray-400 text-lg">
-//                 Choose your battle mode and face opponents in real-time coding duels
-//               </p>
-//             </motion.div>
-//           </div>
-
-//           {/* Stats Bar */}
-//           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="ab-glass rounded-2xl p-6 mb-8">
-//             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-//               <div className="text-center">
-//                 <div className="text-3xl font-bold ">{battle_stats?.rating}</div>
-//                 <div className="text-sm text-gray-400 flex items-center justify-center gap-1">
-//                   <Trophy className="w-4 h-4 text-yellow-500" /> Rating
-//                 </div>
-//               </div>
-//               <div className="text-center">
-//                 <div className="text-3xl font-bold text-green-400">{battle_stats?.win_rate}%</div>
-//                 <div className="text-sm text-gray-400 flex items-center justify-center gap-1">
-//                   <Target className="w-4 h-4" /> Win Rate
-//                 </div>
-//               </div>
-//               <div className="text-center">
-//                 <div className="text-3xl font-bold ">{battle_stats?.battles}</div>
-//                 <div className="text-sm text-gray-400 flex items-center justify-center gap-1">
-//                   <Swords className="w-4 h-4 text-teal-400" /> Battles
-//                 </div>
-//               </div>
-//               <div className="text-center">
-//                 <div className="text-3xl font-bold text-orange-400">{battle_stats?.win_streak}</div>
-//                 <div className="text-sm text-gray-400 flex items-center justify-center gap-1">
-//                   <Flame className="w-4 h-4" /> Win Streak
-//                 </div>
-//               </div>
-//             </div>
-//           </motion.div>
-
-//           {/* Battle Modes */}
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-//             {battle_modes?.map((mode, i) => {
-//               const safe_icon_name = getSafeIconName(mode.icon);
-//               const mode_id = spacedToSnakeCase(mode.title);
-
-//               return (
-//               <motion.div key={mode_id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}>
-//                 <div
-//                   className={`ab-glass ab-glass-hover rounded-2xl p-6 cursor-pointer transition-all ${selectedMode === mode_id ? "ring-2 ring-teal-500" : ""}`}
-//                   onClick={() => setSelectedMode(mode_id)}
-//                 >
-//                   <div className="flex items-start justify-between mb-4">
-//                     <div className={`w-14 h-14 rounded-xl bg-linear-to-br ${mode.color} flex items-center justify-center`}>
-//                       <DynamicIcon name={safe_icon_name} className="w-6 h-6 text-white" />
-//                     </div>
-//                     <div className="flex items-center gap-2 text-sm text-gray-400">
-//                       <Clock className="w-4 h-4" /> {mode.time}
-//                     </div>
-//                   </div>
-//                   <h3 className="text-xl font-bold mb-2">{mode.title}</h3>
-//                   <p className="text-gray-400 text-sm mb-4">{mode.description}</p>
-//                   <button
-//                     onClick={(e) => {
-//                       e.stopPropagation()
-//                       handleStartBattle(mode_id)
-//                     }}
-//                     className={`hover:cursor-pointer w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-//                       selectedMode === mode_id ? "bg-linear-to-r from-teal-500 to-green-500 text-black" : "bg-gray-100 hover:bg-gray-200"
-//                     }`}
-//                   >
-//                     <Play className="w-5 h-5" />
-//                     {isSearching && selectedMode === mode_id ? "Finding Opponent..." : "Start Battle"}
-//                   </button>
-//                 </div>
-//               </motion.div>
-//             )
-//             })}
-//           </div>
-
-//           {/* Matchmaking Modal */}
-//           <AnimatePresence>
-//             {isSearching && (
-//               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-//                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="ab-glass rounded-2xl p-8 max-w-md w-full mx-4 text-center">
-//                   <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-linear-to-br from-teal-500 to-green-500 flex items-center justify-center animate-pulse">
-//                     <Swords className="w-10 h-10 text-black" />
-//                   </div>
-//                   <h3 className="text-2xl font-bold mb-2">Finding Opponent</h3>
-//                   <p className="text-gray-400 mb-6">Matching you with a worthy challenger...</p>
-//                   <div className="flex items-center justify-center gap-2 text-teal-400">
-//                     <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce [animationDelay:0ms]" />
-//                     <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce [animationDelay:150ms]" />
-//                     <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce [animationDelay:300ms]" />
-//                   </div>
-//                   <button onClick={() => setIsSearching(false)} className="mt-6 px-6 py-2 text-gray-400 hover:text-white transition-colors">
-//                     Cancel
-//                   </button>
-//                 </motion.div>
-//               </motion.div>
-//             )}
-//           </AnimatePresence>
-
-//           {/* Recent Matches */}
-//           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-//             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-//               <Clock className="w-6 h-6 text-teal-400" /> Recent Matches
-//             </h2>
-//             <div className="ab-glass rounded-2xl overflow-hidden">
-//               {recent_matches?.map((match, i) => (
-//                 <div key={i} className="flex items-center justify-between p-4 border-b border-gray-200 last:border-0 hover:bg-gray-100 transition-colors">
-//                   <div className="flex items-center gap-4">
-//                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${match.result === "win" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
-//                       {match.result === "win" ? "W" : "L"}
-//                     </div>
-//                     <div>
-//                       <div className="font-semibold ">vs {match.opponent_user_name}</div>
-//                       <div className="text-sm text-gray-500">{match.problem}</div>
-//                     </div>
-//                   </div>
-//                   <div className="text-right">
-//                     <div className={`font-semibold ${match.result === "win" ? "text-green-400" : "text-red-400"}`}>
-//                       {match.rating_change}
-//                     </div>
-//                     <div className="text-sm text-gray-500">{match.time}</div>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           </motion.div>
-//         </div>
-//       </main>
-//     </div>
-//   )
-// }
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -198,17 +32,26 @@ export default function BattleClient({
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [userId] = useState(() => {
+    if (typeof window !== "undefined" && window.localStorage) {
+      let storedId = localStorage.getItem("dsasaga_user_id");
+      if (!storedId) {
+        storedId = "usr_" + Math.floor(Math.random() * 1000000) + "_" + Date.now().toString(36);
+        localStorage.setItem("dsasaga_user_id", storedId);
+      }
+      return storedId;
+    }
+    return "usr_" + Math.floor(Math.random() * 1000000);
+  });
   const [username] = useState(() => "Player_" + Math.floor(Math.random() * 1000));
 
   // Connect socket and register listeners
   useEffect(() => {
-    // 1. CRITICAL FIX: Attach auth credentials before connecting
-    // This satisfies your server.js io.use() middleware requirements
     socket.auth = {
+      userId,
       username,
     };
 
-    // 2. Initialize connection
     socket.connect();
 
     // Auto-fill code if shared via URL (?code=DSA-XXX)
@@ -241,22 +84,32 @@ export default function BattleClient({
       socket.off("battleStart");
       socket.off("battleError");
     };
-  }, [ds_param, router, searchParams, username]);
+  }, [ds_param, router, searchParams, userId, username]);
+
+  const [selectedDifficulty, setSelectedDifficulty] = useState<"easy" | "medium" | "hard">("medium");
 
   // Handle 1v1 Random Queue
   const handleRandomMatch = () => {
+    if (!selectedDifficulty) {
+      setErrorMessage("Please select a difficulty before searching for a match.");
+      return;
+    }
     setIsSearching(true);
     setErrorMessage("");
     socket.emit("joinQueue", {
-      userId: "user_" + Math.random().toString(36).substring(2, 6), // Replace with your auth user ID later
-      username: username || "Player", // Use the auth name
       topic: ds_param,
+      difficulty: selectedDifficulty,
+      userId,
     });
   };
 
   const handleCancelMatch = () => {
     setIsSearching(false);
-    socket.emit("leaveQueue", { topic: ds_param });
+    socket.emit("leaveQueue", {
+      topic: ds_param,
+      difficulty: selectedDifficulty,
+      userId,
+    });
   };
 
   // Handle Custom Room Invite
@@ -265,6 +118,7 @@ export default function BattleClient({
     socket.emit("createCustomRoom", {
       username: username || "Player",
       topic: ds_param,
+      difficulty: selectedDifficulty,
     });
   };
 
@@ -314,14 +168,54 @@ export default function BattleClient({
         {/* Random 1v1 Matchmaking Card */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/90 space-y-4 shadow-xs">
           <h2 className="text-xl font-bold text-slate-900">1v1 Random Match</h2>
-          <p className="text-slate-500 text-sm">Match with an online opponent in real-time {ds_param} duel.</p>
+          <p className="text-slate-500 text-sm">Select difficulty and match with an online opponent in real-time {ds_param} duel.</p>
+
+          {/* Difficulty Selector */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">Select Difficulty</label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedDifficulty("easy")}
+                disabled={isSearching}
+                className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all border cursor-pointer ${selectedDifficulty === "easy"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-500 shadow-xs ring-2 ring-emerald-500/20"
+                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                  }`}
+              >
+                🟢 Easy
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDifficulty("medium")}
+                disabled={isSearching}
+                className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all border cursor-pointer ${selectedDifficulty === "medium"
+                    ? "bg-amber-50 text-amber-700 border-amber-500 shadow-xs ring-2 ring-amber-500/20"
+                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                  }`}
+              >
+                🟡 Medium
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDifficulty("hard")}
+                disabled={isSearching}
+                className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all border cursor-pointer ${selectedDifficulty === "hard"
+                    ? "bg-rose-50 text-rose-700 border-rose-500 shadow-xs ring-2 ring-rose-500/20"
+                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                  }`}
+              >
+                🔴 Hard
+              </button>
+            </div>
+          </div>
 
           {isSearching ? (
             <button
               onClick={handleCancelMatch}
-              className="w-full bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-xl font-bold transition-all shadow-sm animate-pulse cursor-pointer"
+              className="w-full bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-xl font-bold transition-all shadow-sm animate-pulse cursor-pointer capitalize"
             >
-              Finding Opponent... (Click to Cancel)
+              Finding {selectedDifficulty} Opponent... (Click to Cancel)
             </button>
           ) : (
             <button

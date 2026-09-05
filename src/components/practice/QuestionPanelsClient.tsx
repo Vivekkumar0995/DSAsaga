@@ -9,7 +9,7 @@ import {
   RotateCcw, Copy, Check, Loader2, ChevronLeft,
   ChevronRight, Search, X, ThumbsUp, Star, Share2,
   BookOpen, FlaskConical, FileText, Lightbulb, Plus, Trash2,
-  Users, Trophy, Clock, HardDrive, Percent, Zap, Swords, Award, Target, Flame
+  Users, Trophy, Clock, HardDrive, Percent, Zap, Swords, Award, Target, Flame, Flag
 } from "lucide-react";
 import EditorCore from "@/components/editor/EditorCore";
 import SyntaxHighlighter from "@/components/editor/SyntaxHighlighter";
@@ -39,13 +39,18 @@ type Props = {
   };
   winner?: string | null;
   matchOutcome?: {
-    type: 'win' | 'loss';
+    type: 'win' | 'loss' | 'draw';
     reason: string;
     message: string;
+    finalScores?: any[];
   } | null;
   roomId?: string;
+  endTime?: number | null;
   onBattleSubmit?: (passed: number, total: number, questionsSolvedCount?: number) => void;
+  onBattleDone?: (payload: any) => void;
+  isSubmittingDone?: boolean;
   onTimeExpired?: () => void;
+  onSurrender?: () => void;
 };
 
 type LangKey = "cpp" | "java" | "python" | "c" | "javascript";
@@ -102,9 +107,9 @@ function generateDynamicStarterCode(lang: LangKey, question: any): string {
 }
 
 const DIFF_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  easy:   { bg: "#DCFCE7", color: "#15803D", border: "#BBF7D0" },
+  easy: { bg: "#DCFCE7", color: "#15803D", border: "#BBF7D0" },
   medium: { bg: "#FEF3C7", color: "#B45309", border: "#FDE68A" },
-  hard:   { bg: "#FEE2E2", color: "#B91C1C", border: "#FECACA" },
+  hard: { bg: "#FEE2E2", color: "#B91C1C", border: "#FECACA" },
 };
 
 function parseDescription(text: string) {
@@ -236,7 +241,7 @@ function checkOutputMatch(
             }
           }
         }
-      } catch {}
+      } catch { }
     }
 
     if (slug.includes("3sum") || title.includes("3sum") || title.includes("three sum")) {
@@ -254,7 +259,7 @@ function checkOutputMatch(
             if (isValid) return true;
           }
         }
-      } catch {}
+      } catch { }
     }
   }
 
@@ -269,7 +274,7 @@ function checkOutputMatch(
         const sortedE = [...pExpected].sort(sortCmp);
         if (JSON.stringify(sortedA) === JSON.stringify(sortedE)) return true;
       }
-    } catch {}
+    } catch { }
   }
 
   return false;
@@ -287,8 +292,12 @@ export default function QuestionPanelsClient({
   winner,
   matchOutcome,
   roomId,
+  endTime,
   onBattleSubmit,
+  onBattleDone,
+  isSubmittingDone = false,
   onTimeExpired,
+  onSurrender,
 }: Props) {
   const router = useRouter();
 
@@ -314,11 +323,36 @@ export default function QuestionPanelsClient({
   }, [solvedQuestionsMap]);
 
   const previousHref = previousQuestion ? `/${dataStructure}/practice/${previousQuestion.slug}` : undefined;
-  const nextHref     = nextQuestion     ? `/${dataStructure}/practice/${nextQuestion.slug}`     : undefined;
+  const nextHref = nextQuestion ? `/${dataStructure}/practice/${nextQuestion.slug}` : undefined;
 
-  // 1:30 Hours (90 mins = 5400s) Contest Timer
-  const [timeLeft, setTimeLeft] = useState(5400);
+  // Server-Authoritative Timer or Fallback Dynamic Timer
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    if (endTime) {
+      return Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+    }
+    const diff = (activeQuestion?.difficulty || "medium").toLowerCase();
+    return diff === "easy" ? 15 * 60 : diff === "hard" ? 45 * 60 : 30 * 60;
+  });
+
   useEffect(() => {
+    if (!endTime) return;
+
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+      setTimeLeft(remaining);
+      if (remaining <= 0 && onTimeExpired) {
+        onTimeExpired();
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [endTime, onTimeExpired]);
+
+  useEffect(() => {
+    if (endTime) return;
+
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -330,13 +364,16 @@ export default function QuestionPanelsClient({
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [onTimeExpired]);
+  }, [endTime, onTimeExpired]);
 
   const formatTimer = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    if (h > 0) {
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
   // Auth guard
@@ -400,9 +437,9 @@ export default function QuestionPanelsClient({
   const completions = useCompletions();
 
   // Search & Replace State
-  const [showSearch,       setShowSearch]       = useState(false);
-  const [searchQuery,      setSearchQuery]      = useState("");
-  const [replaceQuery,     setReplaceQuery]     = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [replaceQuery, setReplaceQuery] = useState("");
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
 
   useEffect(() => {
@@ -451,9 +488,9 @@ export default function QuestionPanelsClient({
     }
   }, [battleMode]);
 
-  const [isRunning,    setIsRunning]    = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [copied,       setCopied]       = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Friend Standing Drawer State
   const [showStandingDrawer, setShowStandingDrawer] = useState(false);
@@ -525,6 +562,10 @@ export default function QuestionPanelsClient({
   };
 
   const handleRun = async () => {
+    if (matchOutcome) {
+      toast.error("Match has ended.");
+      return;
+    }
     if (!requireAuth()) return;
     setBottomTab("output");
     setIsRunning(true);
@@ -623,6 +664,10 @@ export default function QuestionPanelsClient({
   };
 
   const handleSubmit = async () => {
+    if (matchOutcome) {
+      toast.error("Match has ended.");
+      return;
+    }
     if (!requireAuth()) return;
     setBottomTab("output");
     setIsSubmitting(true);
@@ -681,7 +726,7 @@ export default function QuestionPanelsClient({
       fetch(`/api/questions/submit?questionSlug=${activeQuestion.slug}`)
         .then(r => r.json())
         .then(d => { if (d.success) setSubmissions(d.submissions || []); })
-        .catch(() => {});
+        .catch(() => { });
     } catch (e: any) {
       setSubmitResult({ verdict: "Error", passed: 0, total: 0 });
       setConsoleLogs([`[ERR] ${e.message}`]);
@@ -691,7 +736,7 @@ export default function QuestionPanelsClient({
     }
   };
 
-  const diff      = (activeQuestion?.difficulty || "easy").toLowerCase();
+  const diff = (activeQuestion?.difficulty || "easy").toLowerCase();
   const diffStyle = DIFF_STYLES[diff] ?? DIFF_STYLES.easy;
 
   const LEFT_TABS: { key: LeftTabKey; label: string; icon: any }[] = useMemo(() => {
@@ -699,10 +744,10 @@ export default function QuestionPanelsClient({
       return [{ key: "description", label: "Description", icon: BookOpen }];
     }
     return [
-      { key: "description",  label: "Description",  icon: BookOpen    },
-      { key: "solutions",    label: "Solutions",    icon: Lightbulb   },
-      { key: "submissions",  label: "Submissions",  icon: FlaskConical},
-      { key: "editorial",    label: "Editorial",    icon: FileText    },
+      { key: "description", label: "Description", icon: BookOpen },
+      { key: "solutions", label: "Solutions", icon: Lightbulb },
+      { key: "submissions", label: "Submissions", icon: FlaskConical },
+      { key: "editorial", label: "Editorial", icon: FileText },
     ];
   }, [battleMode]);
 
@@ -726,15 +771,15 @@ export default function QuestionPanelsClient({
   const activeCase = customCases.find(c => c.id === activeCaseId);
 
   const opponentPassed = opponent?.questionsSolved ?? opponent?.passCount ?? 0;
-  const opponentTotal  = opponent?.totalQuestions || (allQuestions.length > 0 ? allQuestions.length : 4);
+  const opponentTotal = opponent?.totalQuestions || (allQuestions.length > 0 ? allQuestions.length : 4);
   const opponentProgressPct = opponentTotal > 0 ? (opponentPassed / opponentTotal) * 100 : 0;
 
   return (
     <div className="flex flex-col h-screen pt-24 bg-[#F8F9FB] font-sans overflow-hidden text-slate-800">
-      
+
       {/* ── SUB-NAVBAR TOOLBAR ── */}
       <div className="bg-white border-b border-slate-200/90 px-5 py-2.5 flex items-center justify-between shadow-2xs flex-shrink-0 z-10">
-        
+
         {/* Left Side: Opponent Standing Pill Button */}
         <div className="flex items-center gap-3">
           <button
@@ -771,29 +816,69 @@ export default function QuestionPanelsClient({
               <button
                 key={q._id || q.slug || idx}
                 onClick={() => setActiveQuestionIdx(idx)}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  isSelected
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${isSelected
                     ? "bg-white text-slate-900 shadow-xs border border-slate-200"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/60"
-                }`}
+                  }`}
               >
                 <span>Q{idx + 1}</span>
                 {isSolved ? (
                   <Check size={12} className="text-emerald-600 font-bold" />
                 ) : (
-                  <span className={`w-2 h-2 rounded-full ${
-                    qDiff === 'easy' ? 'bg-emerald-500' : qDiff === 'medium' ? 'bg-amber-500' : 'bg-rose-500'
-                  }`} />
+                  <span className={`w-2 h-2 rounded-full ${qDiff === 'easy' ? 'bg-emerald-500' : qDiff === 'medium' ? 'bg-amber-500' : 'bg-rose-500'
+                    }`} />
                 )}
               </button>
             );
           })}
         </div>
 
-        {/* Right Side: 1:30 Hrs Contest Countdown Timer */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs font-bold shadow-xs">
-          <Clock size={13} className="text-teal-400 animate-pulse" />
-          <span>{formatTimer(timeLeft)}</span>
+        {/* Right Side: Contest Countdown Timer, Green Done Button & Surrender Button */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs font-bold shadow-xs">
+            <Clock size={13} className="text-teal-400 animate-pulse" />
+            <span>{formatTimer(timeLeft)}</span>
+          </div>
+
+          {battleMode && onBattleDone && (
+            <button
+              disabled={isSubmittingDone || Boolean(matchOutcome)}
+              onClick={() => {
+                if (matchOutcome) return;
+                onBattleDone({
+                  questionId: activeQuestion?._id || activeQuestion?.slug,
+                  code,
+                  language: activeLang,
+                  passCount: submitResult?.passed ?? 0,
+                  totalTests: submitResult?.total ?? 0,
+                });
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-sans text-xs font-bold shadow-xs transition-all cursor-pointer hover:shadow-sm"
+              title="Submit solution to win match"
+            >
+              {isSubmittingDone ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Check size={13} className="stroke-[3]" />
+              )}
+              <span>Done</span>
+            </button>
+          )}
+
+          {battleMode && onSurrender && (
+            <button
+              onClick={() => {
+                if (window.confirm("Are you sure you want to surrender? Your opponent will be awarded the win.")) {
+                  onSurrender();
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-sans text-xs font-bold shadow-xs transition-all cursor-pointer hover:shadow-sm"
+              title="Surrender Match"
+            >
+              <Flag size={13} />
+              <span>Surrender</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -804,7 +889,7 @@ export default function QuestionPanelsClient({
           {/* ── LEFT PANEL: Question Statement ── */}
           <Panel defaultSize={42} minSize={25}>
             <div className="h-full flex flex-col bg-white border border-gray-200/90 rounded-2xl shadow-xs overflow-hidden">
-              
+
               {/* Tab Navigation */}
               <div className="flex items-center justify-between border-b border-gray-200/80 px-4 h-11 bg-white flex-shrink-0">
                 <div className="flex items-center gap-1">
@@ -812,11 +897,10 @@ export default function QuestionPanelsClient({
                     <button
                       key={key}
                       onClick={() => setLeftTab(key)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        leftTab === key
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${leftTab === key
                           ? "bg-slate-100 text-slate-900 font-semibold"
                           : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-                      }`}
+                        }`}
                     >
                       <Icon size={14} />
                       {label}
@@ -1050,7 +1134,7 @@ export default function QuestionPanelsClient({
 
                     {/* Editor Toolbar */}
                     <div className="h-11 px-4 bg-[#111318] border-b border-slate-800/80 flex items-center justify-between flex-shrink-0">
-                      
+
                       <select
                         value={activeLang}
                         onChange={e => handleLangChange(e.target.value as LangKey)}
@@ -1207,16 +1291,15 @@ export default function QuestionPanelsClient({
                 {/* LOWER: Integrated Terminal */}
                 <Panel defaultSize={35} minSize={15}>
                   <div className="h-full flex flex-col bg-[#080A10] text-slate-200 overflow-hidden font-sans">
-                    
+
                     <div className="h-9 bg-[#0D0F17] border-b border-slate-800 flex items-center justify-between px-2 flex-shrink-0">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setBottomTab("testcases")}
-                          className={`flex items-center gap-1.5 px-3.5 h-9 border-b-2 text-xs font-semibold transition-all ${
-                            bottomTab === "testcases"
+                          className={`flex items-center gap-1.5 px-3.5 h-9 border-b-2 text-xs font-semibold transition-all ${bottomTab === "testcases"
                               ? "border-teal-400 text-teal-400 bg-slate-900/40"
                               : "border-transparent text-slate-400 hover:text-slate-200"
-                          }`}
+                            }`}
                         >
                           <FlaskConical size={13} />
                           Test Cases
@@ -1224,11 +1307,10 @@ export default function QuestionPanelsClient({
 
                         <button
                           onClick={() => setBottomTab("output")}
-                          className={`flex items-center gap-1.5 px-3.5 h-9 border-b-2 text-xs font-semibold transition-all ${
-                            bottomTab === "output"
+                          className={`flex items-center gap-1.5 px-3.5 h-9 border-b-2 text-xs font-semibold transition-all ${bottomTab === "output"
                               ? "border-teal-400 text-teal-400 bg-slate-900/40"
                               : "border-transparent text-slate-400 hover:text-slate-200"
-                          }`}
+                            }`}
                         >
                           <Terminal size={13} />
                           Output & Verdict
@@ -1249,11 +1331,10 @@ export default function QuestionPanelsClient({
                               <div
                                 key={c.id}
                                 onClick={() => setActiveCaseId(c.id)}
-                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-all ${
-                                  activeCaseId === c.id
+                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-all ${activeCaseId === c.id
                                     ? "bg-slate-800 text-teal-300 font-semibold border-l-2 border-teal-400"
                                     : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
-                                }`}
+                                  }`}
                               >
                                 <span>Case {idx + 1}</span>
                                 {customCases.length > 1 && (
@@ -1296,11 +1377,10 @@ export default function QuestionPanelsClient({
                       {bottomTab === "output" && (
                         <div className="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-3">
                           {submitResult && (
-                            <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                              submitResult.verdict === "Accepted"
+                            <div className={`p-3 rounded-xl border flex items-center justify-between ${submitResult.verdict === "Accepted"
                                 ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
                                 : "bg-rose-950/40 border-rose-500/40 text-rose-300"
-                            }`}>
+                              }`}>
                               <span className="font-bold text-sm">{submitResult.verdict}</span>
                               <span className="text-xs opacity-80">{submitResult.passed} / {submitResult.total} Test Cases Passed</span>
                             </div>
@@ -1310,16 +1390,15 @@ export default function QuestionPanelsClient({
                             const r = runResults[c.id];
                             if (!r) return null;
                             const isCorrect = r.status === "correct";
-                            const isError   = r.status === "error";
+                            const isError = r.status === "error";
 
                             return (
-                              <div key={c.id} className={`p-3 rounded-xl border space-y-2 ${
-                                isError
+                              <div key={c.id} className={`p-3 rounded-xl border space-y-2 ${isError
                                   ? "bg-rose-950/20 border-rose-800/40 text-rose-300"
                                   : isCorrect
-                                  ? "bg-emerald-950/20 border-emerald-800/40 text-emerald-300"
-                                  : "bg-slate-900 border-slate-800 text-slate-300"
-                              }`}>
+                                    ? "bg-emerald-950/20 border-emerald-800/40 text-emerald-300"
+                                    : "bg-slate-900 border-slate-800 text-slate-300"
+                                }`}>
                                 <div className="flex justify-between items-center font-bold text-[11px] uppercase tracking-wide">
                                   <span>Case {idx + 1}</span>
                                   <span>{isError ? `❌ ${r.errorType || "Error"}` : isCorrect ? "✅ Passed" : "❌ Wrong Output"}</span>
@@ -1415,11 +1494,10 @@ export default function QuestionPanelsClient({
                   <div
                     key={q._id || idx}
                     onClick={() => { setActiveQuestionIdx(idx); setShowStandingDrawer(false); }}
-                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                      activeQuestionIdx === idx
+                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${activeQuestionIdx === idx
                         ? "bg-teal-50 border-teal-200 text-teal-900 font-semibold"
                         : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-md">Q{idx + 1}</span>
@@ -1436,40 +1514,61 @@ export default function QuestionPanelsClient({
         </div>
       )}
 
-      {/* ── BATTLE WIN / LOSS VICTORY & DEFEAT OVERLAY MODAL ── */}
+      {/* ── BATTLE WIN / LOSS / DRAW VICTORY & DEFEAT OVERLAY MODAL ── */}
       {matchOutcome && (
-        <div className="fixed inset-0 z-[99999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-lg bg-white border rounded-3xl p-8 shadow-2xl text-center space-y-6 animate-in zoom-in-95 duration-200 ${
-            matchOutcome.type === 'win' ? 'border-emerald-200' : 'border-rose-200'
-          }`}>
-            {/* Header Icon Banner */}
-            <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center shadow-lg ${
-              matchOutcome.type === 'win'
-                ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-white'
-                : 'bg-gradient-to-tr from-rose-500 to-red-600 text-white'
+        <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
+          <div className={`w-full max-w-lg bg-white border rounded-3xl p-8 shadow-2xl text-center space-y-6 animate-in zoom-in-95 duration-200 ${matchOutcome.type === 'win'
+              ? 'border-emerald-200'
+              : matchOutcome.type === 'draw'
+                ? 'border-slate-300'
+                : 'border-rose-200'
             }`}>
-              {matchOutcome.type === 'win' ? <Trophy size={40} /> : <X size={40} />}
+            {/* Header Icon Banner */}
+            <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center shadow-lg ${matchOutcome.type === 'win'
+                ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-white'
+                : matchOutcome.type === 'draw'
+                  ? 'bg-gradient-to-tr from-slate-600 to-gray-500 text-white'
+                  : 'bg-gradient-to-tr from-rose-500 to-red-600 text-white'
+              }`}>
+              {matchOutcome.type === 'win' ? <Trophy size={40} /> : matchOutcome.type === 'draw' ? <Award size={40} /> : <X size={40} />}
             </div>
 
             <div>
-              <h2 className={`text-3xl font-extrabold tracking-tight ${
-                matchOutcome.type === 'win' ? 'text-emerald-600' : 'text-rose-600'
-              }`}>
-                {matchOutcome.type === 'win' ? 'VICTORY!' : 'DEFEAT'}
+              <h2 className={`text-3xl font-extrabold tracking-tight ${matchOutcome.type === 'win'
+                  ? 'text-emerald-600'
+                  : matchOutcome.type === 'draw'
+                    ? 'text-slate-700'
+                    : 'text-rose-600'
+                }`}>
+                {matchOutcome.type === 'win' ? 'VICTORY!' : matchOutcome.type === 'draw' ? 'DRAW!' : 'DEFEAT'}
               </h2>
+
+              {/* Dynamic Subtext based on reason */}
               <p className="text-slate-600 text-sm mt-2 leading-relaxed max-w-sm mx-auto font-medium">
-                {matchOutcome.message}
+                {matchOutcome.reason === 'forfeit' ? (
+                  matchOutcome.type === 'win' ? "Your opponent surrendered!" : "You surrendered the match."
+                ) : matchOutcome.reason === 'timeout' ? (
+                  matchOutcome.type === 'win' ? "Your opponent disconnected!" : "Disconnected due to network timeout."
+                ) : (
+                  `Final Score: ${totalSolvedCount} - ${opponentPassed}`
+                )}
               </p>
+
+              {matchOutcome.message && (
+                <p className="text-slate-400 text-xs mt-1 font-sans">
+                  {matchOutcome.message}
+                </p>
+              )}
             </div>
 
             {/* Match Stats Summary Card */}
             <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 grid grid-cols-2 gap-4 text-center font-sans">
               <div>
-                <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider block">Questions Solved</span>
+                <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider block">Your Solved</span>
                 <span className="text-xl font-bold text-slate-900 mt-0.5 block">{totalSolvedCount} / {allQuestions.length}</span>
               </div>
               <div>
-                <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider block">Opponent Progress</span>
+                <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider block">Opponent Solved</span>
                 <span className="text-xl font-bold text-slate-900 mt-0.5 block">{opponentPassed} / {opponentTotal}</span>
               </div>
             </div>
@@ -1478,13 +1577,20 @@ export default function QuestionPanelsClient({
             <div className="flex gap-3">
               <Link
                 href={`/${dataStructure}/battle`}
-                className={`flex-1 py-3 rounded-xl font-bold text-white text-sm shadow-md transition-all ${
-                  matchOutcome.type === 'win'
+                className={`flex-1 py-3 rounded-xl font-bold text-white text-sm shadow-md transition-all ${matchOutcome.type === 'win'
                     ? 'bg-emerald-600 hover:bg-emerald-500'
-                    : 'bg-slate-900 hover:bg-slate-800'
-                }`}
+                    : matchOutcome.type === 'draw'
+                      ? 'bg-slate-700 hover:bg-slate-600'
+                      : 'bg-slate-900 hover:bg-slate-800'
+                  }`}
               >
-                Return to Battle Lobby
+                Back to Lobby
+              </Link>
+              <Link
+                href={`/${dataStructure}/battle`}
+                className="flex-1 py-3 rounded-xl font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 text-sm border border-slate-200 transition-all"
+              >
+                Find New Match
               </Link>
             </div>
           </div>
