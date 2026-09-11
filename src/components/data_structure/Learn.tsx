@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import Link from "next/link"
 import { BookOpen, Play, CheckCircle, ChevronRight } from "lucide-react"
 import { Data_Structure_Props } from "@/types/data_structure"
-import { spacedToSnakeCase, getNumberOfCompletedLessons } from "@/lib/utils"
+import { getNumberOfCompletedLessons, spaceTo_ } from "@/lib/utils"
 
 export function LearningHubSection({ ds_param, learning_stats, learning_tracks }: Data_Structure_Props) {
   return (
@@ -38,7 +38,7 @@ export function LearningHubSection({ ds_param, learning_stats, learning_tracks }
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
             >
-              <Link href={`${ds_param}/learn/${spacedToSnakeCase(track.title)}`}>
+              <Link href={`${ds_param}/learn#${spaceTo_(track.title)}`}>
                 <div className="bg-white shadow-sm hover:shadow-md border border-gray-200 rounded-2xl p-6 transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-12 h-12 rounded-xl bg-linear-to-br from-teal-500 to-cyan-500 flex items-center justify-center`}>

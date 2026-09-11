@@ -52,11 +52,29 @@ export async function POST(req: NextRequest) {
 // GET /api/data-structure
 // Returns a list of all data structure slugs currently in the DB.
 // Used by the Admin UI to show which ones exist.
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     await connectDB();
+    const { searchParams } = new URL(req.url)
+    let docs;
 
-    const docs = await DataStructureModel.find({}, { slug: 1, name: 1, _id: 0 }).lean();
+    if (searchParams.get('learn') === "1"){
+      docs = await DataStructureModel.find({},
+        {
+          slug: 1,
+          name: 1,
+          _id: 0,
+          learning_tracks: {
+            title: 1,
+            lessons: {
+              title: 1
+            }
+          }
+        }
+      ).lean()
+    }
+    else 
+      docs = await DataStructureModel.find({}, { slug: 1, name: 1, _id: 0 }).lean();
 
     return NextResponse.json({ data: docs }, { status: 200 });
   } catch (error: unknown) {

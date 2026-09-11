@@ -84,23 +84,6 @@ export async function GET(
 
     let doc = await DataStructureModel.findOne({ slug: lowerSlug }).lean();
 
-    if (lowerSlug === "array" && doc && (!doc.learning_tracks || doc.learning_tracks.length === 0)) {
-      await DataStructureModel.updateOne(
-        { slug: "array" },
-        {
-          $set: {
-            name: "Arrays",
-            learning_tracks: ARRAY_TEMPLATE.learning_tracks,
-            battle_modes: ARRAY_TEMPLATE.battle_modes,
-            problems: ARRAY_TEMPLATE.problems,
-            testimonials: ARRAY_TEMPLATE.testimonials,
-            live_activity: ARRAY_TEMPLATE.live_activity,
-          }
-        }
-      );
-      doc = await DataStructureModel.findOne({ slug: "array" }).lean();
-    }
-
     if (!doc) {
       return NextResponse.json(
         { message: `Data structure "${slug}" not found` },

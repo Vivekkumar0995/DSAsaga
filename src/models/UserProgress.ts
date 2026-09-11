@@ -1,7 +1,34 @@
 import mongoose from "mongoose";
 
+const lesson_stats = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    completed: Boolean,
+    in_progress: Boolean
+  },
+  { _id: false }
+)
+
+const learning_stats = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    completed: Boolean,
+    in_progress: Boolean,
+    lesson_stats: [lesson_stats]
+  },
+  { _id: false }
+)
+
+export const data_structure_stats = new mongoose.Schema(
+  {
+    slug: { type: String, required: true, trim: true },
+    learning_stats: [learning_stats]
+  },
+  { _id: false }
+)
+
 const userProgressSchema = new mongoose.Schema({
-    userId: {
+      userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true,
@@ -43,12 +70,16 @@ const userProgressSchema = new mongoose.Schema({
         type: String,
         default: "Beginner",
       },
+      data_structure_stats: {
+        type: [data_structure_stats],
+        default: []
+      },
     },
     {
       timestamps: true,
     }
   );
 
-const UserProgress = mongoose.models.user_progress || mongoose.model("user_progress",userProgressSchema);
+const UserProgress = mongoose.models.user_progress || mongoose.model("user_progress", userProgressSchema);
 
 export default UserProgress;

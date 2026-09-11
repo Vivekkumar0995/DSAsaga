@@ -1,82 +1,52 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { BookOpen, Play, CheckCircle, ChevronDown, Clock, CircleDot } from "lucide-react"
-import { Data_Structure_Props, learning_track } from "@/types/data_structure"
-import { getNumberOfCompletedLessons, getTotalNumberOfCompletedLessons, getTotalNumberOfInProgressLessons, getTotalNumberOfLessons } from "@/lib/utils"
+import { BookOpen, CheckCircle, ChevronDown, Clock, CircleDot, Circle } from "lucide-react"
+import { learning_track, learning_stats } from "@/types/data_structure"
+import { snakeToTitleCase, getNumberOfCompletedLessons, getTotalNumberOfCompletedLessons, getTotalNumberOfInProgressLessons, getTotalNumberOfLessons, spaceTo_ } from "@/lib/utils"
+import Link from "next/link"
+import { useCurrentPathTill } from "@/lib/client_utils"
 
-// const tracks = [
-//   {
-//     id: "arrays",
-//     title: "Array Fundamentals",
-//     description: "Master the basics of array manipulation and common patterns",
-//     difficulty: "Beginner",
-//     lessons: [
-//       { title: "Introduction to Arrays", duration: "10 min", completed: true },
-//       { title: "Array Traversal Techniques", duration: "15 min", completed: true },
-//       { title: "In-place Modifications", duration: "12 min", completed: true },
-//       { title: "Prefix Sum Pattern", duration: "18 min", completed: false },
-//       { title: "Kadane's Algorithm", duration: "20 min", completed: false },
-//     ],
-//     color: "from-green-500 to-emerald-500",
-//   },
-//   {
-//     id: "two-pointers",
-//     title: "Two Pointer Technique",
-//     description: "Learn to solve problems efficiently with two pointers",
-//     difficulty: "Intermediate",
-//     lessons: [
-//       { title: "Two Pointer Basics", duration: "12 min", completed: true },
-//       { title: "Opposite Direction Pointers", duration: "15 min", completed: false },
-//       { title: "Same Direction Pointers", duration: "15 min", completed: false },
-//       { title: "Three Sum Pattern", duration: "20 min", completed: false },
-//     ],
-//     color: "from-teal-500 to-cyan-500",
-//   },
-//   {
-//     id: "sliding-window",
-//     title: "Sliding Window",
-//     description: "Optimize subarray and substring problems",
-//     difficulty: "Intermediate",
-//     lessons: [
-//       { title: "Fixed Size Windows", duration: "15 min", completed: false },
-//       { title: "Variable Size Windows", duration: "18 min", completed: false },
-//       { title: "Window with HashMap", duration: "20 min", completed: false },
-//       { title: "Maximum/Minimum Windows", duration: "22 min", completed: false },
-//     ],
-//     color: "from-blue-500 to-indigo-500",
-//   },
-//   {
-//     id: "binary-search",
-//     title: "Binary Search Mastery",
-//     description: "Beyond basic binary search - advanced applications",
-//     difficulty: "Intermediate",
-//     lessons: [
-//       { title: "Binary Search Fundamentals", duration: "12 min", completed: false },
-//       { title: "Search Space Reduction", duration: "18 min", completed: false },
-//       { title: "Binary Search on Answer", duration: "20 min", completed: false },
-//       { title: "Rotated Array Problems", duration: "22 min", completed: false },
-//     ],
-//     color: "from-purple-500 to-pink-500",
-//   },
 
-// ]
-
-export default function LearnPage({ ds_param, learning_tracks, learning_stats }: Data_Structure_Props) {
-  const [expandedTrack, setExpandedTrack] = useState<string | null>("arrays")
-  let nTotCompleted = getTotalNumberOfCompletedLessons(learning_stats!);
-  let nTotInProgress = getTotalNumberOfInProgressLessons(learning_stats!);
+export default function LearnPage({ ds_param, learning_tracks, learning_stats }: { 
+  ds_param: string; 
+  learning_tracks: learning_track[]; 
+  learning_stats: learning_stats[]; 
+}) {
+  const [expandedTrack, setExpandedTrack] = useState<string | null>(null)
+  let nTotCompleted = getTotalNumberOfCompletedLessons(learning_stats);
+  let nTotInProgress = getTotalNumberOfInProgressLessons(learning_stats);
   let nTotLessons = getTotalNumberOfLessons(learning_tracks!);
 
+  const pathParts = useCurrentPathTill(0);
+  const current_section = pathParts[1]
+
   const toggleTrack = (trackId: string) => {
-    setExpandedTrack(expandedTrack === trackId ? null : trackId)
+    setExpandedTrack(currentTrack => currentTrack === trackId ? null : trackId)
   }
 
   const getTrackProgress = (track: learning_track) => {
     const completed = getNumberOfCompletedLessons(track, learning_stats);
     return { completed, total: track.lessons.length, percent: (completed / track.lessons.length) * 100 }
   }
+
+  useEffect(() => {
+    const expandTrackFromHash = () => {
+      const trackId = window.location.hash.slice(1)
+      if (!trackId) return
+
+      const track = learning_tracks.find(
+        currentTrack => spaceTo_(currentTrack.title) === trackId,
+      )
+      if (track) setExpandedTrack(track.title)
+    }
+
+    expandTrackFromHash()
+    window.addEventListener("hashchange", expandTrackFromHash)
+
+    return () => window.removeEventListener("hashchange", expandTrackFromHash)
+  }, [learning_tracks])
 
   return (
     <div className="array-battle-theme min-h-screen bg-white text-black">
@@ -89,7 +59,7 @@ export default function LearnPage({ ds_param, learning_tracks, learning_stats }:
               animate={{ opacity: 1, y: 0 }}
             >
               <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-                Learning <span className="text-[#14b8a6]">Hub</span>
+                Learning <span className="text-[#14b8a6]">{snakeToTitleCase(ds_param)}</span>
               </h1>
               <p className="text-gray-400 text-lg">
                 Structured learning paths to master every algorithm
@@ -110,7 +80,8 @@ export default function LearnPage({ ds_param, learning_tracks, learning_stats }:
             </div>
             <div className="h-3 bg-gray-300 rounded-full overflow-hidden">
               <div
-                className="h-full bg-linear-to-r from-teal-500 to-green-500 rounded-full transition-all w-[19%]"
+                className="h-full bg-linear-to-r from-teal-500 to-green-500 rounded-full transition-all"
+                style={{ width: `${(nTotCompleted / nTotLessons) * 100}%` }}
               />
             </div>
             <div className="mt-4 grid grid-cols-3 gap-4 text-center">
@@ -143,7 +114,7 @@ export default function LearnPage({ ds_param, learning_tracks, learning_stats }:
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + i * 0.05 }}
                 >
-                  <div className={`ab-glass rounded-2xl overflow-hidden`}>
+                  <div className={`ab-glass rounded-2xl overflow-hidden scroll-mt-28`} id={`${spaceTo_(track.title)}`}>
                     {/* Track Header */}
                     <div
                       className={`p-6 cursor-pointer transition-colors`}
@@ -155,22 +126,32 @@ export default function LearnPage({ ds_param, learning_tracks, learning_stats }:
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className="text-xl font-bold ">{track.title}</h3>
+                            <div className="flex items-center">
+                              <h3 className="text-xl font-bold ">{track.title}</h3>
+                              {track.category && (
+                                <span className="ml-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
+                                  {track.category}
+                                </span>
+                              )}
+                            </div>
 
-                            <motion.div
-                              animate={{ rotate: isExpanded ? 180 : 0 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <ChevronDown className="w-5 h-5 text-gray-400" />
-                            </motion.div>
+                            
+                              
+
+                              <motion.div
+                                animate={{ rotate: isExpanded ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <ChevronDown className="w-5 h-5 text-gray-400" />
+                              </motion.div>
 
                           </div>
                           <p className="text-gray-400 text-sm mb-3">{track.description}</p>
                           <div className="flex items-center gap-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              track.difficulty === "Beginner" ? "bg-green-500/20 text-green-400" :
-                              track.difficulty === "Intermediate" ? "bg-yellow-500/20 text-yellow-400" :
-                              "bg-red-500/20 text-red-400"
+                              track.difficulty === "Beginner" ? "bg-green-100 text-green-700" :
+                              track.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-700" :
+                              "bg-red-100 text-red-700"
                             }`}>
                               {track.difficulty}
                             </span>
@@ -212,7 +193,7 @@ export default function LearnPage({ ds_param, learning_tracks, learning_stats }:
                                 const is_lesson_in_progess = corresponding_stat?.lesson_stats.find(stat => stat.title === lesson.title)?.in_progress;
                                 
                                 return (
-                                    <div
+                                    <Link
                                         key={j}
                                         className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${
                                       is_lesson_completed
@@ -221,6 +202,7 @@ export default function LearnPage({ ds_param, learning_tracks, learning_stats }:
                                         ? "bg-yellow-100 hover:bg-yellow-200"
                                         : "bg-gray-100 hover:bg-gray-200"
                                         } cursor-pointer`}
+                                        href={`./${current_section}/${spaceTo_(track.title)}/${spaceTo_(lesson.title)}`}
                                     >
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                                       is_lesson_completed
@@ -234,7 +216,7 @@ export default function LearnPage({ ds_param, learning_tracks, learning_stats }:
                                             ) : is_lesson_in_progess ? (
                                                 <CircleDot className="w-5 h-5" />
                                             ) : (
-                                                <Play className="w-4 h-4" />
+                                                <Circle className="w-4 h-4" />
                                             )}
                                         </div>
                                         <div className="flex-1">
@@ -246,7 +228,7 @@ export default function LearnPage({ ds_param, learning_tracks, learning_stats }:
                                             <Clock className="w-4 h-4" />
                                             {lesson.duration}
                                         </div>
-                                    </div>
+                                    </Link>
                                 )
                             })}
                           </div>

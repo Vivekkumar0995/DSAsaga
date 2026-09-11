@@ -1,9 +1,20 @@
 import mongoose from "mongoose";
 
+export const quizQuestionSchema = new mongoose.Schema(
+  {
+    question: { type: String, required: true, trim: true },
+    options: { type: [String], required: true, trim: true },
+    multi_select: { type: Boolean, required: true }
+  },
+  { _id: false }
+)
+
 const lessonSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     duration: { type: String, required: true, trim: true },
+    contentRef: { type: mongoose.Types.ObjectId, ref: 'lesson_content', required: true },
+    quiz_questions: { type: [quizQuestionSchema], required: true }
   },
   { _id: false }
 );
@@ -13,6 +24,7 @@ const learningTrackSchema = new mongoose.Schema(
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
     difficulty: { type: String, required: true, trim: true },
+    category: { type: String, required: true, trim: true },
     lessons: {
       type: [lessonSchema],
       default: [],

@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { Home, BookOpen, Swords, GraduationCap, Trophy } from 'lucide-react'
 import { snakeToTitleCase } from '@/lib/utils'
+import { useCurrentPathTill } from '@/lib/client_utils'
 
 
 const navItems = [
@@ -15,15 +15,28 @@ const navItems = [
 ]
 
 export default function Sidebar() {
-  const pathname = usePathname()
-  const pathParts = pathname.split('/').filter(Boolean)
-  const currentTopic = pathParts[0] || ''
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  //                                              WRONG
+  // This pattern of usePathname() with so many other redundant things can't be abstracted into a function as that
+  // would break the order of react hooks if any react hook is used after this due to memoization by the React compiler.
+  // One way to actually abstract this is to put the function containing usePathname at last but that's too much care
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  const topicBasePath = `/${currentTopic}`
-  const topicName = snakeToTitleCase(currentTopic);
+
+  // Actually its not completely wrong. If we name the function anything except like `useSomething` then it would
+  // break for sure. That's when the react compiler can't know that it is a hook and can use a hook internally.
+  // But if we name the function `useSomething`, the Linter treats it the same way as a hook. Anyway, this
+  // `useCurrentPathTill` is called a custom hook.
+
+  
+  const pathParts = useCurrentPathTill(0);
+  const pathname = pathParts.join("/");
+  const topicBasePath = `/${pathParts[0]}`
+  const currentDS = pathParts[0]
+  const topicName = snakeToTitleCase(currentDS);
 
   // Update nav links based on the current topic if we are inside one
-  const contextualNavItems = currentTopic
+  const contextualNavItems = currentDS
     ? navItems.map(item => {
         if (item.href === '/') {
           return {
@@ -67,7 +80,7 @@ export default function Sidebar() {
       {/* Nav links */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {contextualNavItems.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href || (href !== `/${currentTopic}` && pathname.startsWith(href))
+          const active = pathname === href || (href !== `/${currentDS}` && pathname.startsWith(href))
           return (
             <Link
               key={href}

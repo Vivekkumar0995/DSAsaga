@@ -1,12 +1,23 @@
-type lesson = {
+import { Types } from "mongoose"
+
+export type quiz_question = {
+    question: string,
+    options: string[],
+    multi_select: boolean
+}
+
+export type lesson = {
     title: string,
-    duration: string
+    duration: string,
+    contentRef: Types.ObjectId,
+    quiz_questions: quiz_question[]
 }
 
 export type learning_track = {
     title: string,
     description: string
     difficulty: string,
+    category: string,
     lessons: lesson[]
     // color: "from-green-500 to-emerald-500"
 }
