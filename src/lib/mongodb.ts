@@ -1,5 +1,8 @@
 import DataStructureModel, { DataStructureType } from '@/models/data_structure_model';
 import mongoose from 'mongoose';
+import { cache } from 'react';
+import { _ToSpace } from './utils';
+import { LessonMeta } from '@/models/lesson_content_model';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -40,17 +43,53 @@ export default async function connectDB() {
   return cached.conn;
 }
 
-export async function getDataStructure(slug: string): Promise<DataStructureType | null> {
+export const getDataStructure = cache(async (slug: string): Promise<DataStructureType | null> => {
   try {
-    // Use absolute URL for server-side fetch in Next.js
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/data-structure/${slug}`, {
-      cache: "no-store", // always fetch fresh from DB
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
+    // Reuse global singleton connection (no HTTP overhead)
+    await connectDB();
+
+    // Directly query MongoDB
+    const data = await DataStructureModel.findOne({ slug }).lean();
+    return data ? JSON.parse(JSON.stringify(data)) : null
+  } catch (error) {
+    console.error('Failed to fetch data structure:', error);
     return null;
   }
-}
+});
+
+export const getLesson = cache(async (data_structure: string, track: string, lesson: string): Promise<LessonMeta | null> => {
+  try {
+    await connectDB()
+
+    const lessonMeta = await DataStructureModel.aggregate([
+      // 1. Find the main document
+      { $match: { slug: data_structure } },
+
+      // 2. Flatten the tracks array
+      { $unwind: "$learning_tracks" },
+      { $match: { "learning_tracks.title": _ToSpace(track) } },
+
+      // 3. Flatten the lessons array
+      { $unwind: "$learning_tracks.lessons" },
+      { $match: { "learning_tracks.lessons.title": _ToSpace(lesson) } },
+
+      // 4. Shape the final output to just give you the lesson details
+      {
+        $project: {
+          _id: 0,
+          difficulty: "$learning_tracks.difficulty",
+          category: "$learning_tracks.category",
+          lesson: {
+            duration: "$learning_tracks.lessons.duration",
+            contentRef: "$learning_tracks.lessons.contentRef",
+            quiz_questions: "$learning_tracks.lessons.quiz_questions"
+          }
+        }
+      }
+    ]);
+    return lessonMeta[0]
+  } catch (error) {
+    console.error('Failed to fetch lesson:', error);
+    return null;
+  }
+})

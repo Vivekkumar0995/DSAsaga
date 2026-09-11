@@ -20,7 +20,12 @@ export function spacedToSnakeCase (str: String) {
    return str.toLowerCase().replaceAll(" ", "_");
 }
 
-
+export function spaceTo_ (str: string): string {
+   return str.replaceAll(" ", "_")
+}
+export function _ToSpace (str: string): string {
+   return str.replaceAll("_", " ")
+}
 export function spacedToKebabCase (str: string) {
  return str
     .trim()
