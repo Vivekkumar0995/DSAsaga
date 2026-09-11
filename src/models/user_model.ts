@@ -59,7 +59,7 @@ const userSchema = new mongoose.Schema({
   displayName: {
     type: String,
     default: "",
-  }, 
+  },
   timeZone: { type: String, default: "UTC" },
   darkMode: { type: Boolean, default: false },
   lastLoginAt: {
@@ -72,7 +72,7 @@ const userSchema = new mongoose.Schema({
     default: 'user',
   },
 
-},{ timestamps: true });
+}, { timestamps: true });
 
 const UserModel = mongoose.models.user || mongoose.model("user", userSchema);
 export default UserModel;
